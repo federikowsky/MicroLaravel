@@ -153,19 +153,46 @@ $container->registerLazy(AssetsService::class, function () {
 
 Facade::setContainer($container);
 
-// Registra il servizio 'view' nel container
+/**
+ * return the view instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return View
+ */
 $container->registerLazy(View::class, function () {
     return new View();
 });
 
+/**
+ * return the response instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return Response
+ */
 $container->registerLazy(Response::class, function () {
     return new Response();
 });
 
+/**
+ * return the url generator instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return UrlGenerator
+ */
 $container->registerLazy(UrlGenerator::class, function () {
     return new UrlGenerator();
 });
 
+/**
+ * return the redirect instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return Redirect
+ */
 $container->registerLazy(Redirect::class, function () use ($container) {
     return new Redirect($container->getLazy(UrlGenerator::class));
 });

@@ -74,8 +74,9 @@ class ServiceContainer {
      * @param string $className
      * @return object
      * @throws \Exception
+     * 
      */
-    public function resolve($className) {
+    public function resolve($className): ?object {
         $reflector = new ReflectionClass($className);
 
         // Check if the class has a constructor
