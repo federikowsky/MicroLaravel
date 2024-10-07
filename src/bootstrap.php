@@ -2,17 +2,43 @@
 
 session_start();
 
-require_once __DIR__ . '/../config/app.php';
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/libs/helpers.php';
-require_once __DIR__ . '/libs/flash.php';
-require_once __DIR__ . '/libs/Sanitizer.php';
-require_once __DIR__ . '/libs/Validator.php';
-require_once __DIR__ . '/libs/Filter.php';
-require_once __DIR__ . '/libs/Logger.php';
-require_once __DIR__ . '/Models/User.php';
-require_once __DIR__ . '/ServiceContainer.php';
-require_once __DIR__ . '/Router.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+
+use App\Models\ {
+    User
+};
+
+use App\Core\ {
+    ServiceContainer,
+    Logger
+};
+
+use App\Facades\ {
+    Facade
+};
+
+use App\HTTP\ {
+    View,
+    Response,
+    UrlGenerator,
+    Redirect
+};
+
+use App\Helpers\ {
+    Sanitizer,
+    Validator,
+    Filter,
+};
+
+use App\Services\ {
+    AuthService,
+    UserService,
+    AssetsService
+};
 
 
 // Initialize the service container
@@ -32,14 +58,25 @@ $container->registerLazy('db', function() {
 });
 
 /**
+ * return the user model instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return User
+ */
+$container->registerLazy(User::class, function() use ($container) {
+    return new User($container->getLazy('db'));
+});
+
+/**
  * return the logger instance
  * @param string $name
  * @param Closure $function
  * 
  * @return Logger
  */
-$container->registerLazy('logger', function() {
-    return new Logger(__DIR__ . '/../logs/app.log');  // Esempio di un logger
+$container->registerLazy(Logger::class, function() {
+    return new Logger(__DIR__ . '/../storage/logs/app.log');  // Esempio di un logger
 });
 
 
@@ -50,7 +87,7 @@ $container->registerLazy('logger', function() {
  * 
  * @return Sanitizer
  */
-$container->registerLazy('sanitizer', function () {
+$container->registerLazy(Sanitizer::class, function () {
     return new Sanitizer();
 });
 
@@ -61,9 +98,8 @@ $container->registerLazy('sanitizer', function () {
  * 
  * @return Validator
  */
-$container->registerLazy('validator', function () use ($container) {
-    $db = $container->getLazy('db'); // Ottieni la connessione al database
-    return new Validator($db);  // Passa il database alla classe Validator
+$container->registerLazy(Validator::class, function () use ($container) {
+    return new Validator($container->getLazy('db'));  // Passa il database alla classe Validator
 });
 
 /**
@@ -73,6 +109,63 @@ $container->registerLazy('validator', function () use ($container) {
  * 
  * @return Filter
  */
-$container->registerLazy('filter', function () use ($container) {
-    return new Filter($container->getLazy('sanitizer'), $container->getLazy('validator'));
+$container->registerLazy(Filter::class, function () use ($container) {
+    return new Filter($container->getLazy(Sanitizer::class), $container->getLazy(Validator::class));
+});
+
+/**************************************************** SERVICE ****************************************************/
+
+/**
+ * return the auth service instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return AuthService
+ */
+
+$container->registerLazy(AuthService::class, function () use ($container) {
+    return new AuthService($container->getLazy(User::class));
+});
+
+/**
+ * return the user service instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return UserService
+ */
+$container->registerLazy(UserService::class, function () use ($container) {
+    return new UserService($container->getLazy(User::class));
+});
+
+/**
+ * return the assets service instance
+ * @param string $name
+ * @param Closure $function
+ * 
+ * @return AssetsService
+ */
+$container->registerLazy(AssetsService::class, function () {
+    return new AssetsService();
+});
+
+/**************************************************** FACADE ****************************************************/
+
+Facade::setContainer($container);
+
+// Registra il servizio 'view' nel container
+$container->registerLazy(View::class, function () {
+    return new View();
+});
+
+$container->registerLazy(Response::class, function () {
+    return new Response();
+});
+
+$container->registerLazy(UrlGenerator::class, function () {
+    return new UrlGenerator();
+});
+
+$container->registerLazy(Redirect::class, function () use ($container) {
+    return new Redirect($container->getLazy(UrlGenerator::class));
 });

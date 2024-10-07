@@ -1,10 +1,9 @@
 <?php
 
-const DB_HOST = '127.0.0.1';  // Connetti a MySQL su 127.0.0.1 (localhost tramite TCP/IP)
-const DB_NAME = 'auth';        // Nome del database creato
-const DB_USER = 'myuser';      // Nome utente
-const DB_PASSWORD = 'mypassword';  // Password dell'utente
-
+define('DB_HOST', $_ENV['DB_HOST']);           // Connect to MySQL on 127.0.0.1
+define('DB_NAME', $_ENV['DB_NAME']);       // Name of the database
+define('DB_USER', $_ENV['DB_USER']);       // User name
+define('DB_PASSWORD', $_ENV['DB_PASSWORD']);   // User password
 
 
 /**

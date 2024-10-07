@@ -1,26 +1,30 @@
 <?php
 
-require_once '../src/bootstrap.php';
-require_once '../src/Router.php';
-require_once '../src/Controllers/ErrorController.php';
+// Carica il file bootstrap
+require_once __DIR__ . '/../src/bootstrap.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/app.php';
 
+use App\Controllers\ExceptionController;
+use App\Core\Logger;
+use App\HTTP\Router;
 
-$exceptionHandler = new ErrorController($container->getLazy('logger'));
+// Imposta il gestore delle eccezioni
+$exceptionHandler = new ExceptionController($container->getLazy(Logger::class));
 set_exception_handler([$exceptionHandler, 'handle']);
 
-
-// inizialize the router
+// Inizializza il router
 $router = new Router($container);
 
-// Load the routes from the modular configuration files
+// Carica le rotte dai file di configurazione modulari
 $router->loadRoutes([
-    __DIR__ . '/../config/routes/app.php',
-    __DIR__ . '/../config/routes/auth.php',
-    __DIR__ . '/../config/routes/admin.php',
-    __DIR__ . '/../config/routes/user.php',
-    __DIR__ . '/../config/routes/post.php'
+    __DIR__ . '/../routes/app.php',
+    __DIR__ . '/../routes/auth.php',
+    __DIR__ . '/../routes/admin.php',
+    __DIR__ . '/../routes/user.php',
+    __DIR__ . '/../routes/post.php'
 ]);
 
-// Parse the request URI
+// Analizza l'URI richiesta
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $router->route($uri);

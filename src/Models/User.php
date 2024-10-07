@@ -1,6 +1,10 @@
 <?php
-
 // src/Models/User.php
+
+namespace App\Models;
+
+use PDO;
+
 class User {
     protected $db;
 
@@ -56,7 +60,7 @@ class User {
     }
 
     // Metodo per creare un nuovo utente
-    public function create(string $email, string $username, string $password, string $activation_code, int $expiry = 1 * 24 * 60 * 60, bool $is_admin = false): bool
+    public function create(string $email, string $username, string $password, string $activation_code, int $expiry = 60 * 60 * 24 * 1, bool $is_admin = false): bool
     {
         // sanity check
         if ($this->exists($email, $username)) {
@@ -72,7 +76,7 @@ class User {
         $stmt->bindValue(':email', $email);
         $stmt->bindValue(':password', password_hash($password, PASSWORD_BCRYPT));
         $stmt->bindValue(':is_admin', (int) $is_admin, PDO::PARAM_INT);
-        $stmt->bindValue(':activation_code', password_hash($activation_code, PASSWORD_DEFAULT));
+        $stmt->bindValue(':activation_code', hash_hmac('sha256', $activation_code, SECRET_KEY));
         $stmt->bindValue(':activation_expiry', date('Y-m-d H:i:s', time() + $expiry));
 
 
@@ -93,43 +97,33 @@ class User {
     }
 
     // Metodo per aggiornare i dati di un utente
-    public function update($id, $username, $email, $is_admin, $password = null) {
+    public function update($id, array $data) {
         $query = 'UPDATE users
-            SET username=:username, email=:email, is_admin=:is_admin';
-
-        if ($password) {
-            $query .= ', password=:password';
-        }
-
-        $query .= ' WHERE id=:id';
-
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':id', $id);
-        $stmt->bindValue(':username', $username);
-        $stmt->bindValue(':email', $email);
-        $stmt->bindValue(':is_admin', $is_admin, PDO::PARAM_INT);
-
-        if ($password) {
-            $stmt->bindValue(':password', password_hash($password, PASSWORD_BCRYPT));
-        }
+            SET username = :username, email = :email, is_admin = :is_admin
+            WHERE id = :id';
         
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':username', $data['username']);
+        $stmt->bindValue(':email', $data['email']);
+        $stmt->bindValue(':is_admin', $data['is_admin']);
+        $stmt->bindValue(':id', $id);
+
         return $stmt->execute();
     }
 
     // Metodo per eliminare un utente
-    public function delete($id, int $active = 0) {
+    public function delete($id) {
         $query = 'DELETE FROM users
-            WHERE id =:id and active=:active';
+            WHERE id =:id';
         
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':id', $id);
-        $stmt->bindValue(':active', $active, PDO::PARAM_INT);
 
         return $stmt->execute();
     }
 
     // Inserisce un token di autenticazione (remember me)
-    public function insert_user_token(int $user_id, string $selector, string $hashed_validator, string $expiry): bool
+    public function insert_user_token(int $user_id, string $selector, string $validator, string $expiry): bool
     {
         $query = 'INSERT INTO user_tokens(user_id, selector, hashed_validator, expiry)
                 VALUES(:user_id, :selector, :hashed_validator, :expiry)';
@@ -137,7 +131,7 @@ class User {
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':user_id', $user_id);
         $stmt->bindValue(':selector', $selector);
-        $stmt->bindValue(':hashed_validator', $hashed_validator);
+        $stmt->bindValue(':hashed_validator', hash_hmac('sha256', $validator, SECRET_KEY));
         $stmt->bindValue(':expiry', $expiry);
 
         return $stmt->execute();
@@ -157,7 +151,9 @@ class User {
     // Metodo per trovare un utente tramite l'email
     public function find_by_email($email)
     {
-        $query = "SELECT * FROM users WHERE email = :email";
+        $query = 'SELECT id, username, email, password, active, is_admin
+                FROM users
+                WHERE email=:email';
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':email', $email);
@@ -169,7 +165,7 @@ class User {
     // Metodo per trovare un utente tramite l'username
     public function find_by_username($username)
     {
-        $query = 'SELECT id, username, password, active, email
+        $query = 'SELECT id, username, email, password, active, is_admin
                 FROM users
                 WHERE username=:username';
 
@@ -180,15 +176,47 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Metodo per trovare un utente non verificato
-    public function find_unverified_user($activation_code, $email)
+    // Metodo per trovare un utente tramite l'id
+    public function find_by_id($id)
     {
-        $query = 'SELECT id, activation_code, activation_expiry < now() as expired
+        $query = 'SELECT id, username, email, password, active, is_admin
                 FROM users
-                WHERE active = 0 AND email=:email';
+                WHERE id=:id';
 
         $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':email', $email);
+        $stmt->bindValue(':id', $id);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function finde_by_activation_code($activation_code)
+    {
+        $hashed_activation_code = hash_hmac('sha256', $activation_code, SECRET_KEY);
+
+        $query = 'SELECT id, username, email, password, active, is_admin
+                FROM users
+                WHERE activation_code=:activation_code';
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':activation_code', $hashed_activation_code);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Metodo per trovare un utente non verificato
+    public function find_unverified_user($activation_code)
+    {
+        $hashed_activation_code = hash_hmac('sha256', $activation_code, SECRET_KEY);
+        
+        // find the user with the activation code
+        $query = 'SELECT id, activation_code, activation_expiry < now() as expired
+                FROM users
+                WHERE active = 0 AND activation_code=:activation_code';
+
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':activation_code', $hashed_activation_code);
         $stmt->execute();
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -200,7 +228,7 @@ class User {
                 return null;
             }
             // verify the password
-            if (password_verify($activation_code, $user['activation_code'])) {
+            if (hash_equals($user['activation_code'], $activation_code)) {
                 return $user;
             }
         }
