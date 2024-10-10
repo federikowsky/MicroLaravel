@@ -23,7 +23,7 @@ class Router
      * Carica tutte le rotte dai file di configurazione modulari
      * @param array $routeFiles
      */
-    public function loadRoutes(array $routeFiles)
+    public function load_routes(array $routeFiles)
     {
         // Controlla se esiste il file di cache
         if (file_exists($this->cacheFile)) {
@@ -33,7 +33,7 @@ class Router
             foreach ($routeFiles as $file) {
                 if (file_exists($file)) {
                     $routeConfig = require $file;
-                    $this->addRoutes($routeConfig['routes'], $routeConfig['middleware'] ?? []);
+                    $this->add_routes($routeConfig['routes'], $routeConfig['middleware'] ?? []);
                 }
             }
 
@@ -47,7 +47,7 @@ class Router
      * @param array $routes
      * @param array $middleware
      */
-    protected function addRoutes(array $routes, array $groupMiddleware)
+    protected function add_routes(array $routes, array $groupMiddleware)
     {
         foreach ($routes as $route => $config) {
             $this->routes[$route] = [
@@ -56,6 +56,14 @@ class Router
                 'middleware' => array_unique(array_merge($groupMiddleware, $config['middleware'] ?? []))
             ];
         }
+    }
+
+    public function get_routes(?string $route = null)
+    {
+        if ($route) {
+            return $this->routes[$route] ?? null;
+        }
+        return $this->routes;
     }
 
     /**
@@ -75,11 +83,11 @@ class Router
             
 
             // Esegui middleware e metodo del controller
-            $this->executeMiddlewareStack($middlewareStack, function() use ($controllerName, $method, $params) {
-                $response = $this->executeController($controllerName, $method, $params);
-                $response->send();
-                
+            $response = $this->execute_middleware_stack($middlewareStack, function() use ($controllerName, $method, $params) {
+                return $this->execute_controller($controllerName, $method, $params);
             });
+            $response->send();
+
         } else {
             throw new NotFoundException("Route '$uri' not found.");
         }
@@ -109,11 +117,10 @@ class Router
      * @param array $middlewareStack
      * @param callable $next
      */
-    protected function executeMiddlewareStack(array $middlewareStack, callable $next): void
+    protected function execute_middleware_stack(array $middlewareStack, callable $next)
     {
         if (empty($middlewareStack)) {
-            $next();
-            return;
+            return $next();
         }
 
         $middlewareName = array_shift($middlewareStack);
@@ -127,8 +134,8 @@ class Router
             $middleware = $this->container->getLazy($middlewareClass);
 
             if (method_exists($middleware, 'handle')) {
-                $middleware->handle(function() use ($middlewareStack, $next) {
-                    $this->executeMiddlewareStack($middlewareStack, $next);
+                return $middleware->handle(function() use ($middlewareStack, $next) {
+                   return $this->execute_middleware_stack($middlewareStack, $next);
                 });
             } else {
                 throw new \Exception("Method 'handle' not found in middleware class '$middlewareClass'.");
@@ -145,7 +152,7 @@ class Router
      * @param string $method
      * @param array $params
      */
-    protected function executeController(string $controllerName, string $method, array $params = [])
+    protected function execute_controller(string $controllerName, string $method, array $params = [])
     {
         // Assumi che i controller siano nel namespace App\Controllers
         $controllerClass = "App\\Controllers\\{$controllerName}";

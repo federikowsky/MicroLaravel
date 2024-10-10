@@ -2,37 +2,52 @@
 
 namespace App\HTTP;
 
-class View
-{
-    protected $data = [];
-    protected $flash_message = [];
-    protected $view;
+use App\Core\Flash;
 
-    public function __construct()
+use App\Http\BaseResponse;
+use App\Http\ResponseData;
+
+class View extends BaseResponse
+{
+    protected array $data = [];
+    protected array $flash_message = [];
+    protected string $view;
+
+    public function __construct(ResponseData $response_data)
     {
+        parent::__construct($response_data);
     }
 
-    public function make($view, $data)
+    public function make(string $view): View
     {
+        if (!$view) {
+            throw new \Exception('View must be set.');
+        }
+
         $this->view = $view;
-        $this->data = $data;
         return $this;
     }
 
-    public function with($key, $value = null)
+    public function with($key, $value = null): View
     {
+        if (!$key || array_is_list($key)) {
+            throw new \InvalidArgumentException('key must be a string or an associative array');
+        }
+
         if (is_array($key)) {
-            foreach ($key as $k => $v) {
-                $this->data[$k] = $v;
-            }
+            $this->data = array_merge($this->data, $key);
         } else {
             $this->data[$key] = $value;
         }
         return $this;
     }
 
-    public function with_message($message, $type = FLASH_SUCCESS)
+    public function with_message(string $message, string $type = Flash::FLASH_SUCCESS): View
     {
+        if (!$message) {
+            throw new \Exception('Message must be set.');
+        }
+
         $this->flash_message = ['message' => $message, 'type' => $type];
         return $this;
     }
@@ -42,8 +57,12 @@ class View
      * 
      * @return string
      */
-    public function render()
+    public function render(): string
     {
+        if (!$this->view) {
+            throw new \Exception('View not set.');
+        }
+        
         ob_start();
         extract($this->data);
         // se flash message is set, call the flash function and pass the message and type
@@ -68,10 +87,11 @@ class View
      * 
      * NOTE: This method should not be called. It is called automatically by the framework.
      */
-    public function send()
+    public function send(): void
     {
         $content = $this->render();
-        response($content)
-            ->send();
+        $this->response_data->set_content($content);
+        
+        parent::send();
     }
 }

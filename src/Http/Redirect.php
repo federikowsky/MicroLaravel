@@ -2,27 +2,46 @@
 
 namespace App\HTTP;
 
-use App\HTTP\UrlGenerator;
+use App\Core\Flash;
+use App\HTTP\BaseResponse;
+use App\HTTP\Support\UrlGenerator;
 
-class Redirect
+class Redirect extends BaseResponse
 {
-    protected $urlGenerator;
     protected $url;
-    protected $status;
-    protected $headers;
 
-    public function __construct(UrlGenerator $urlGenerator)
+    public function __construct(ResponseData $response_data)
     {
-        $this->urlGenerator = $urlGenerator;
+        parent::__construct($response_data);
     }
 
-    public function make($path, $status, $headers)
+    public function make(string $path, int $status = 302 , array $headers = []): Redirect
     {
+        if (!$path) {
+            throw new \Exception('Path must be set.');
+        }
+
         $this->url = $path;
-        $this->status = $status;
-        $this->headers = $headers;
+        $this->response_data->set_status($status);
+        $this->with_headers($headers);
         return $this;
     }
+
+    public function get_url(): string
+    {
+        return $this->url;
+    }
+
+    public function get_status(): int
+    {
+        return $this->response_data->get_status();
+    }
+
+    public function get_headers(): array|string|null
+    {
+        return $this->response_data->get_headers();
+    }
+    
 
     /**
      * Redirect to a specific path.
@@ -33,18 +52,21 @@ class Redirect
      * @param bool|null $secure
      * @return $this
      * 
-     * Usage: redirect()->to('/home');
-     * Usage: redirect()->to('/home', 301);
-     * Usage: redirect()->to('/home', 301, ['X-Header' => 'Value']);
-     * Usage: redirect()->to('/home')->with('key', 'value');
-     * Usage: redirect()->to('/home')->with(['key' => 'value']);
-     * Usage: redirect()->to('/home')->with_input(['key' => 'value']);  
+     * @use redirect()->to('/home');
+     * @use redirect()->to('/home', 301);
+     * @use redirect()->to('/home', 301, ['X-Header' => 'Value']);
+     * @use redirect()->to('/home')->with_header('key', 'value');
+     * @use redirect()->to('/home')->with_input(['key' => 'value']);  
      */
-    public function to($path, $status, $headers, $secure)
+    public function to(string $path, int $status = 302, array $headers = [], bool $secure = false): Redirect
     {
-        $this->url = $this->urlGenerator->to($path, $secure);
-        $this->status = $status;
-        $this->headers = array_merge($this->headers, $headers);
+        if (!$path) {
+            throw new \Exception('Path must be set.');
+        }
+
+        $this->url = UrlGenerator::to($path, $secure);
+        $this->response_data->set_status($status);
+        $this->with_headers($headers);
         return $this;
     }
 
@@ -57,19 +79,22 @@ class Redirect
      * @param array $headers
      * @return $this
      * 
-     * Usage: redirect()->route('home');
-     * Usage: redirect()->route('post.show', ['id' => 1]);
-     * Usage: redirect()->route('post.show', ['id' => 1], 301);
-     * Usage: redirect()->route('post.show', ['id' => 1], 301, ['X-Header' => 'Value']);
-     * Usage: redirect()->route('post.show', ['id' => 1])->with('key', 'value');
-     * Usage: redirect()->route('post.show', ['id' => 1])->with(['key' => 'value']);
-     * Usage: redirect()->route('post.show', ['id' => 1])->with_input(['key' => 'value']);  
+     * @use redirect()->route('home');
+     * @use redirect()->route('post.show', ['id' => 1]);
+     * @use redirect()->route('post.show', ['id' => 1], 301);
+     * @use redirect()->route('post.show', ['id' => 1], 301, ['X-Header' => 'Value']);
+     * @use redirect()->route('post.show', ['id' => 1])->with_header('key', 'value');
+     * @use redirect()->route('post.show', ['id' => 1])->with_input(['key' => 'value']);  
      */
-    public function route($route, $parameters = [], $status = 302, $headers = [])
+    public function route(string $route, array $parameters = [], int $status = 302, array $headers = []): Redirect
     {
-        $this->url = $this->urlGenerator->route($route, $parameters);
-        $this->status = $status;
-        $this->headers = array_merge($this->headers, $headers);
+        if (!$route) {
+            throw new \Exception('Route must be set.');
+        }
+
+        $this->url = UrlGenerator::route($route, $parameters);
+        $this->response_data->set_status($status);
+        $this->with_headers($headers);
         return $this;
     }
 
@@ -82,37 +107,49 @@ class Redirect
      * @param array $headers
      * @return $this
      * 
-     * Usage: redirect()->action('HomeController@index');
-     * Usage: redirect()->action('PostController@show', ['id' => 1]);
-     * Usage: redirect()->action('PostController@show', ['id' => 1], 301);
-     * Usage: redirect()->action('PostController@show', ['id' => 1], 301, ['X-Header' => 'Value']);
-     * Usage: redirect()->action('PostController@show', ['id' => 1])->with('key', 'value');
-     * Usage: redirect()->action('PostController@show', ['id' => 1])->with(['key' => 'value']);
-     * Usage: redirect()->action('PostController@show', ['id' => 1])->with_input(['key' => 'value']);
+     * @use redirect()->action('HomeController@index');
+     * @use redirect()->action('PostController@show', ['id' => 1]);
+     * @use redirect()->action('PostController@show', ['id' => 1], 301);
+     * @use redirect()->action('PostController@show', ['id' => 1], 301, ['X-Header' => 'Value']);
+     * @use redirect()->action('PostController@show', ['id' => 1])->with_header('key', 'value');
+     * @use redirect()->action('PostController@show', ['id' => 1])->with_input(['key' => 'value']);
      * 
      */
-    public function action($action, $parameters = [], $status = 302, $headers = [])
+    public function action(string $action, array $parameters = [], int $status = 302, array $headers = []): Redirect
     {
-        $this->url = $this->urlGenerator->action($action, $parameters);
-        $this->status = $status;
-        $this->headers = array_merge($this->headers, $headers);
+        if (!$action) {
+            throw new \Exception('Action must be set.');
+        }
+
+        $this->url = UrlGenerator::action($action, $parameters);
+        $this->response_data->set_status($status);
+        $this->with_headers($headers);
+        return $this;
+    }
+
+    protected function with_headers(array $headers = []): Redirect
+    {
+        foreach($headers as $key => $value) {
+            $this->response_data->add_header($key, $value);
+        }
         return $this;
     }
 
     /**
-     * Set custom headers for the redirect response.
+     * Set a custom header for the redirect response.
      * 
-     * @param array $headers
+     * @param string $key
+     * @param string $value
      * @return $this
      * 
-     * Usage: redirect()->to('/home')->withHeaders(['X-Header' => 'Value', 'Y-Header' => 'Value']);
-     * Usage: redirect()->route('home')->withHeaders(['X-Header' => 'Value', 'Y-Header' => 'Value']);
-     * Usage: redirect()->action('HomeController@index')->withHeaders(['X-Header' => 'Value', 'Y-Header' => 'Value']);
-     *  
+     * @use redirect()->to('/home')->with_header('key', 'value');
+     * @use redirect()->route('home')->with_header('key', 'value');
+     * @use redirect()->action('HomeController@index')->with_header('key', 'value');
+     * 
      */
-    public function with_headers(array $headers = [])
+    public function with_header(string $key, string $value): Redirect
     {
-        $this->headers = array_merge($this->headers, $headers);
+        $this->response_data->add_header($key, $value);
         return $this;
     }
 
@@ -124,20 +161,19 @@ class Redirect
      * @param string $fallback
      * @return $this
      * 
-     * Usage: redirect()->back();
-     * Usage: redirect()->back(301);
-     * Usage: redirect()->back(301, ['X-Header' => 'Value']);
-     * Usage: redirect()->back(301, ['X-Header' => 'Value'], '/fallback');
-     * Usage: redirect()->back(301, ['X-Header' => 'Value'], '/fallback')->with('key', 'value');
-     * Usage: redirect()->back(301, ['X-Header' => 'Value'], '/fallback')->with(['key' => 'value']);
-     * Usage: redirect()->back(301, ['X-Header' => 'Value'], '/fallback')->with_input(['key' => 'value']);
+     * @use redirect()->back();
+     * @use redirect()->back(301);
+     * @use redirect()->back(301, ['X-Header' => 'Value']);
+     * @use redirect()->back(301, ['X-Header' => 'Value'], '/fallback');
+     * @use redirect()->back(301, ['X-Header' => 'Value'], '/fallback')->with_header('key', 'value');
+     * @use redirect()->back(301, ['X-Header' => 'Value'], '/fallback')->with_input(['key' => 'value']);
      * 
      */
-    public function back($status = 302, $headers = [], $fallback = '/')
+    public function back(int $status = 302, array $headers = [], string $fallback = '/'): Redirect
     {
-        $this->url = $_SERVER['HTTP_REFERER'] ?? $this->urlGenerator->to($fallback);
-        $this->status = $status;
-        $this->headers = array_merge($this->headers, $headers);
+        $this->url = request()->server('HTTP_REFERER') ?? UrlGenerator::to($fallback);
+        $this->response_data->set_status($status);
+        $this->with_headers($headers);
         return $this;
     }
 
@@ -148,13 +184,17 @@ class Redirect
      * @param string $type
      * @return $this
      * 
-     * Usage: redirect()->to('/home')->with_message('Welcome back!', 'success');
-     * Usage: redirect()->route('home')->with_message('Welcome back!', 'success');
-     * Usage: redirect()->action('HomeController@index')->with_message('Welcome back!', 'success');
+     * @use redirect()->to('/home')->with_message('Welcome back!', 'success');
+     * @use redirect()->route('home')->with_message('Welcome back!', 'success');
+     * @use redirect()->action('HomeController@index')->with_message('Welcome back!', 'success');
      * 
      */
-    public function with_message($message, $type = FLASH_SUCCESS)
+    public function with_message(string $message, string $type = Flash::FLASH_SUCCESS): Redirect
     {
+        if (!$message) {
+            throw new \Exception('Message must be set.');
+        }
+
         flash('flash_' . uniqid(), $message, $type);
         return $this;
     }
@@ -165,15 +205,21 @@ class Redirect
      * @param array $input
      * @return $this
      * 
-     * Usage: redirect()->to('/home')->with_input(['username' => 'John']);
-     * Usage: redirect()->route('home')->with_input(['username' => 'John']);
-     * Usage: redirect()->action('HomeController@index')->with_input(['username' => 'John']);
+     * @use redirect()->to('/home')->with_input(['username' => 'John']);
+     * @use redirect()->route('home')->with_input(['username' => 'John']);
+     * @use redirect()->action('HomeController@index')->with_input(['username' => 'John']);
      * 
      */
-    public function with_input(array $input)
+    public function with_input(array $input): Redirect
     {
+        if (!$input) {
+            throw new \Exception('Input data must be set.');
+        }
+
         foreach($input as $key => $value) {
-            $_SESSION['inputs'][$key] = $value;
+            session()->set('inputs', [
+                $key => $value
+            ]);
         }
         return $this;
     }
@@ -184,10 +230,10 @@ class Redirect
      * 
      * 
      */
-    public function send()
+    public function send(): void
     {
-        response('', $this->status, $this->headers)
-            ->header('Location', $this->url)
-            ->send();
+        $this->response_data->add_header('Location', $this->url);
+        
+        parent::send();
     }
 }

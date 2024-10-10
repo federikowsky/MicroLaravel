@@ -2,10 +2,10 @@
 
 namespace App\Exceptions\HTTP;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
-class UnauthorizedException extends AppException
+class UnauthorizedException extends BaseException
 {
     protected $message = 'Unauthorized';
     protected $code = 401;

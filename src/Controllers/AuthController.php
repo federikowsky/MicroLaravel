@@ -2,15 +2,16 @@
 
 namespace App\Controllers;
 
-use App\Controllers\Controller;
+use App\Controllers\BaseController;
 use App\Services\AuthService;
 use App\Helpers\Filter;
 use App\Core\Logger;
+use App\Core\Flash;
 
 use App\Exceptions\HTTP\MethodNotAllowedException;
 
 
-class AuthController extends Controller
+class AuthController extends BaseController
 {
     protected $authService;
     protected $filter;
@@ -33,7 +34,7 @@ class AuthController extends Controller
         $errors = [];
         $inputs = [];
 
-        if (is_post_request()) {
+        if (request()->is_method('post')) {
             $fields = [
                 'csrf_token' => 'string',
                 'username' => 'string | required | alphanumeric | between: 3, 25 | unique: users, username',
@@ -53,12 +54,12 @@ class AuthController extends Controller
                 ],
             ];
 
-            [$inputs, $errors] = $this->filter->filter($_POST, $fields, $messages);
+            [$inputs, $errors] = $this->filter->filter(request()->post(), $fields, $messages);
 
             if ($errors) {
-                return view('auth/register', [
+                return view('auth/register')->with([
                     'errors' => $errors,
-                    'inputs' => $inputs
+                    'inputs'=> $inputs
                 ]);
             }
 
@@ -70,11 +71,11 @@ class AuthController extends Controller
                     'Your account has been created successfully. Please check your email to activate your account.'
                 );
             }
-        } elseif (is_get_request()) {
+        } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
-            return view('auth/register', [
+            return view('auth/register')->with([
                 'errors' => $errors,
-                'inputs' => $inputs
+                'inputs'=> $inputs
             ]);
         }
     }
@@ -90,7 +91,7 @@ class AuthController extends Controller
         $inputs = [];
         $errors = [];
 
-        if (is_post_request()) {
+        if (request()->is_method('post')) {
             $fields = [
                 'csrf_token' => 'string',
                 'username' => 'string | required',
@@ -107,12 +108,12 @@ class AuthController extends Controller
                 ]
             ];
 
-            [$inputs, $errors] = $this->filter->filter($_POST, $fields, $messages);
+            [$inputs, $errors] = $this->filter->filter(request()->post(), $fields, $messages);
 
             if ($errors) {
-                return view('auth/login', [
+                return view('auth/login')->with([
                     'errors' => $errors,
-                    'inputs' => $inputs
+                    'inputs'=> $inputs
                 ]);
             }
 
@@ -120,21 +121,21 @@ class AuthController extends Controller
 
             if (!$user) {
                 $errors['login'] = 'Invalid username or password';
-                return view('auth/login', [
+                return view('auth/login')->with([
                     'errors' => $errors,
-                    'inputs' => $inputs
+                    'inputs'=> $inputs
                 ]);
             }
 
             // login successfully
             return redirect('/');
 
-        } elseif (is_get_request()) {
+        } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
             
-            return view('auth/login', [
+            return view('auth/login')->with([
                 'errors' => $errors,
-                'inputs' => $inputs
+                'inputs'=> $inputs
             ]);
         }
     }
@@ -143,7 +144,7 @@ class AuthController extends Controller
 
     public function logout()
     {
-        if (is_post_request()) {
+        if (request()->is_method('post')) {
             $this->authService->logout();
             return redirect('/');
         }
@@ -157,7 +158,7 @@ class AuthController extends Controller
         $errors = [];
         $inputs = [];
 
-        if (is_get_request()) {
+        if (request()->is_method('get')) {
             $fields = [
                 'activation_code' => 'string | required'
             ];
@@ -168,7 +169,7 @@ class AuthController extends Controller
                 ]
             ];
 
-            [$inputs, $errors] = $this->filter->filter($_GET, $fields, $messages);
+            [$inputs, $errors] = $this->filter->filter(request()->get(), $fields, $messages);
 
             if (!$errors) {
                 if ($this->authService->is_user_verified($inputs['activation_code'])) {
@@ -177,7 +178,7 @@ class AuthController extends Controller
                     }
                     return redirect('auth/login')->with_message(
                         'Your account is already activated. Please log in.',
-                        FLASH_INFO
+                        Flash::FLASH_INFO
                     );
                 }
 
@@ -191,7 +192,7 @@ class AuthController extends Controller
 
         return redirect('auth/register')->with_message(
             'The activation link is not valid, please register again.', 
-            FLASH_ERROR
+            Flash::FLASH_ERROR
         );
     }
 }

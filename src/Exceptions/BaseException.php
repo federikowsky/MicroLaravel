@@ -4,7 +4,7 @@ namespace App\Exceptions;
 
 use Exception;
 
-class AppException extends Exception
+class BaseException extends Exception
 {
     protected $view;
     protected $statusCode;

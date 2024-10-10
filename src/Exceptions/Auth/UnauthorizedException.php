@@ -2,10 +2,10 @@
 
 namespace App\Exceptions\Auth;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
-class UnauthorizedException extends AppException
+class UnauthorizedException extends BaseException
 {
     protected $message = 'Access denied due to invalid credentials.';
     protected $view = '';

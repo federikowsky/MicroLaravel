@@ -10,18 +10,15 @@ class UserService
     protected $userModel;
     protected $authService;
 
-    public function __construct(User $userModel)
+    public function __construct(User $userModel, AuthService $authService)
     {
         $this->userModel = $userModel;
-        $this->authService = new AuthService($userModel);
+        $this->authService = $authService;
     }
 
     public function current_user()
     {
-        if ($this->authService->is_user_logged_in()) {
-            return $_SESSION['username'];
-        }
-        return null;
+        return $this->authService->current_user();
     }
 
     public function getUserById(int $id): ?array

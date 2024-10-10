@@ -1,48 +1,33 @@
 <?php
 
-session_start();
+use App\Core\ {
+    ServiceContainer,
+    Logger,
+    Session,
+};
+
+use App\Facades\ {
+    BaseFacade
+};
+
+use App\Services\ {
+    EncryptionService
+};
+
+use App\Session\ {
+    SessionManager,
+};
+
+
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-
-use App\Models\ {
-    User
-};
-
-use App\Core\ {
-    ServiceContainer,
-    Logger
-};
-
-use App\Facades\ {
-    Facade
-};
-
-use App\HTTP\ {
-    View,
-    Response,
-    UrlGenerator,
-    Redirect
-};
-
-use App\Helpers\ {
-    Sanitizer,
-    Validator,
-    Filter,
-};
-
-use App\Services\ {
-    AuthService,
-    UserService,
-    AssetsService
-};
-
-
 // Initialize the service container
 $container = new ServiceContainer();
+
 
 /**
  * return the database connection instance 
@@ -51,22 +36,30 @@ $container = new ServiceContainer();
  * 
  * @return PDO
  */
-$container->registerLazy('db', function() {
-    // function db() is defined in config/database.php 
-
+$container->registerLazy(PDO::class, function(): PDO {
     return db();  
 });
 
-/**
- * return the user model instance
- * @param string $name
- * @param Closure $function
- * 
- * @return User
- */
-$container->registerLazy(User::class, function() use ($container) {
-    return new User($container->getLazy('db'));
-});
+/*****************************************************************************************************************/
+/*--------------------------------------------------- SESSION ---------------------------------------------------*/
+/*****************************************************************************************************************/
+
+
+// Initialize the session manager
+$session_config = require __DIR__ . '/../config/session.php';
+$session_manager = new SessionManager($session_config, $container);
+
+
+
+/***************************************************************************************************************/
+/*--------------------------------------------------- MODEL ---------------------------------------------------*/
+/***************************************************************************************************************/
+
+
+
+/**************************************************************************************************************/
+/*--------------------------------------------------- CORE ---------------------------------------------------*/
+/**************************************************************************************************************/
 
 /**
  * return the logger instance
@@ -75,124 +68,44 @@ $container->registerLazy(User::class, function() use ($container) {
  * 
  * @return Logger
  */
-$container->registerLazy(Logger::class, function() {
+$container->registerLazy(Logger::class, function(): Logger {
     return new Logger(__DIR__ . '/../storage/logs/app.log');  // Esempio di un logger
 });
 
-
 /**
- * return the sanitizer instance
+ * return the session instance
  * @param string $name
  * @param Closure $function
  * 
- * @return Sanitizer
+ * @return Session
  */
-$container->registerLazy(Sanitizer::class, function () {
-    return new Sanitizer();
+$container->registerLazy(Session::class, function() use ($session_manager): Session {
+    return new Session($session_manager->driver());
 });
 
+/*****************************************************************************************************************/
+/*--------------------------------------------------- HELPERS ---------------------------------------------------*/
+/*****************************************************************************************************************/
+
+
+
+/*****************************************************************************************************************/
+/*--------------------------------------------------- SERVICE ---------------------------------------------------*/
+/*****************************************************************************************************************/
+
 /**
- * return the validator instance
+ * return the encryption service instance
  * @param string $name
  * @param Closure $function
  * 
- * @return Validator
+ * @return EncryptionService
  */
-$container->registerLazy(Validator::class, function () use ($container) {
-    return new Validator($container->getLazy('db'));  // Passa il database alla classe Validator
+$container->registerLazy(EncryptionService::class, function (): EncryptionService {
+    return new EncryptionService(APP_KEY);
 });
 
-/**
- * return the filter instance
- * @param string $name
- * @param Closure $function
- * 
- * @return Filter
- */
-$container->registerLazy(Filter::class, function () use ($container) {
-    return new Filter($container->getLazy(Sanitizer::class), $container->getLazy(Validator::class));
-});
+/****************************************************************************************************************/
+/*--------------------------------------------------- HTTP ---------------------------------------------------*/
+/****************************************************************************************************************/
 
-/**************************************************** SERVICE ****************************************************/
-
-/**
- * return the auth service instance
- * @param string $name
- * @param Closure $function
- * 
- * @return AuthService
- */
-
-$container->registerLazy(AuthService::class, function () use ($container) {
-    return new AuthService($container->getLazy(User::class));
-});
-
-/**
- * return the user service instance
- * @param string $name
- * @param Closure $function
- * 
- * @return UserService
- */
-$container->registerLazy(UserService::class, function () use ($container) {
-    return new UserService($container->getLazy(User::class));
-});
-
-/**
- * return the assets service instance
- * @param string $name
- * @param Closure $function
- * 
- * @return AssetsService
- */
-$container->registerLazy(AssetsService::class, function () {
-    return new AssetsService();
-});
-
-/**************************************************** FACADE ****************************************************/
-
-Facade::setContainer($container);
-
-/**
- * return the view instance
- * @param string $name
- * @param Closure $function
- * 
- * @return View
- */
-$container->registerLazy(View::class, function () {
-    return new View();
-});
-
-/**
- * return the response instance
- * @param string $name
- * @param Closure $function
- * 
- * @return Response
- */
-$container->registerLazy(Response::class, function () {
-    return new Response();
-});
-
-/**
- * return the url generator instance
- * @param string $name
- * @param Closure $function
- * 
- * @return UrlGenerator
- */
-$container->registerLazy(UrlGenerator::class, function () {
-    return new UrlGenerator();
-});
-
-/**
- * return the redirect instance
- * @param string $name
- * @param Closure $function
- * 
- * @return Redirect
- */
-$container->registerLazy(Redirect::class, function () use ($container) {
-    return new Redirect($container->getLazy(UrlGenerator::class));
-});
+BaseFacade::set_container($container);

@@ -50,19 +50,21 @@ class ServiceContainer {
      * @return mixed
      * @throws \Exception
      */
-    public function getLazy($name) {
+    public function getLazy($name, array $parameters = []) {
         // If service is already registered, resolve if necessary
         if (isset($this->services[$name])) {
             // If the service is a closure, resolve it
             if (is_callable($this->services[$name])) {
-                $this->services[$name] = call_user_func($this->services[$name]);
+                $this->services[$name] = call_user_func($this->services[$name], ...$parameters);
             }
             return $this->services[$name];
         }
 
         // If the service is not registered, attempt to resolve the class automatically
         if (class_exists($name)) {
-            return $this->resolve($name);
+            $instance = $this->resolve($name, $parameters);
+            $this->register($name, $instance);
+            return $instance;
         }
 
         throw new \Exception("Service '{$name}' not found and could not be resolved.");
@@ -75,31 +77,41 @@ class ServiceContainer {
      * @return object
      * @throws \Exception
      * 
-     */
-    public function resolve($className): ?object {
+     */    
+    public function resolve($className, array $parameters = [])
+    {
         $reflector = new ReflectionClass($className);
 
-        // Check if the class has a constructor
+        // Verifica se la classe ha un costruttore
         $constructor = $reflector->getConstructor();
         if (!$constructor) {
             return new $className;
         }
 
-        // Get the constructor parameters
-        $parameters = $constructor->getParameters();
-        $dependencies = [];
+        // Ottieni i parametri del costruttore
+        $dependencies = $constructor->getParameters();
+        $resolvedParameters = [];
 
-        foreach ($parameters as $parameter) {
-            $dependency = $parameter->getType();
-            
-            if ($dependency && !$dependency->isBuiltin()) {
-                // Resolve the dependency
-                $dependencies[] = $this->getLazy($dependency->getName());
+        foreach ($dependencies as $dependency) {
+            $type = $dependency->getType();
+
+            // Controlla se il tipo è una classe e non un tipo built-in
+            if ($type && !$type->isBuiltin()) {
+                // Risolvi le dipendenze usando il container
+                $resolvedParameters[] = $this->getLazy($type->getName());
             } else {
-                throw new \Exception("Unable to resolve dependency [{$parameter->name}]");
+                // Se il parametro è stato passato manualmente, usalo
+                if (isset($parameters[$dependency->getName()])) {
+                    $resolvedParameters[] = $parameters[$dependency->getName()];
+                } elseif ($dependency->isDefaultValueAvailable()) {
+                    // Usa il valore predefinito se disponibile
+                    $resolvedParameters[] = $dependency->getDefaultValue();
+                } else {
+                    throw new \Exception("Impossibile risolvere la dipendenza [{$dependency->getName()}] per la classe {$className}");
+                }
             }
         }
 
-        return $reflector->newInstanceArgs($dependencies);
+        return $reflector->newInstanceArgs($resolvedParameters);
     }
 }

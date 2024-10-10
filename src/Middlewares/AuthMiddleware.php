@@ -3,6 +3,7 @@
 
 namespace App\Middlewares;
 
+use App\HTTP\Request;
 use App\Services\AuthService;
 
 class AuthMiddleware
@@ -24,6 +25,7 @@ class AuthMiddleware
         }
 
         // L'utente è autenticato, quindi esegui il prossimo step della richiesta
-        call_user_func($next);
+        // call_user_func($next);
+        return $next();
     }
 }

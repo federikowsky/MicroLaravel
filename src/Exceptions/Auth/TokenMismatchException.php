@@ -2,10 +2,10 @@
 
 namespace App\Exceptions\Auth;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
-class TokenMismatchException extends AppException
+class TokenMismatchException extends BaseException
 {
     // Custom message for the exception
     protected $message = 'Token mismatch error occurred.';

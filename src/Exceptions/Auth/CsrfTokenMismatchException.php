@@ -3,9 +3,9 @@
 namespace App\Exceptions\Auth;
 
 use Exception;
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 
-class CsrfTokenMismatchException extends AppException
+class CsrfTokenMismatchException extends BaseException
 {
     protected $message = 'CSRF token mismatch.';
     protected $view = '';

@@ -2,13 +2,14 @@
 
 namespace App\Facades;
 
-use App\Facades\Facade;
+use App\Facades\BaseFacade;
 use App\Services\AssetsService;
 
-class Assets extends Facade
+class Assets extends BaseFacade
 {
-    protected static function getFacadeAccessor()
+    protected static function get_facade_accessor()
     {
-        return AssetsService::class; // Il nome registrato nel container
+        // name of the service in the container
+        return AssetsService::class; 
     }
 }

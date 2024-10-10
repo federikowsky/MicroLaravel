@@ -2,11 +2,11 @@
 
 namespace App\Exceptions\HTTP;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
 
-class BadRequestException extends AppException
+class BadRequestException extends BaseException
 {
     protected $message = 'Bad Request';
     protected $code = 400;

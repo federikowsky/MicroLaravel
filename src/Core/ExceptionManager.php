@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Core;
 
-use App\Controllers\Controller;
 use App\Core\Logger;
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
+
 use Throwable;
 
 
-class ExceptionController extends Controller
+class ExceptionManager
 {
     protected $logger;
 
@@ -50,11 +50,13 @@ class ExceptionController extends Controller
         $this->logException($exception);
 
         // Se è un'eccezione personalizzata
-        if ($exception instanceof AppException) {
+        if ($exception instanceof BaseException) {
             return $this->response($exception->getView(), $exception->getStatusCode());
         }
 
-        // Se non è un'eccezione gestita, restituisci errore generico 500
-        return $this->response('errors/500', 500);
+        // Se non è un'eccezione gestita, ritorna messaggio di errore che l'ha generata
+        return response($exception->getMessage(), 500)
+            ->header('Content-Type', 'text/plain')
+            ->send();
     }
 }

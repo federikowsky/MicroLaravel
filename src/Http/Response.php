@@ -2,64 +2,133 @@
 
 namespace App\HTTP;
 
+use App\HTTP\ {
+    Cookie,
+    BaseResponse
+};
 use Throwable;
 
-class Response
+class Response extends BaseResponse
 {
-    protected $content;
-    protected $status;
-    protected $headers = [];
-    protected $cookies = [];
     protected $exception;
     protected $callback;
-
-    public function __construct()
+    
+    public function __construct(ResponseData $response_data)
     {
+        parent::__construct($response_data);
     }
 
     // Factory method (inizializza i valori di response)
-    public function make($content, $status, array $headers)
+    public function make(string $content, int $status = 200 , array $headers = []): Response
     {
-        $this->set_content($content);
-        $this->status = $status;
-        $this->headers = $headers;
+        $this->set_content($content)
+            ->set_status($status)
+            ->with_headers($headers);
+        
         return $this;
     }
 
-    // Setter per il contenuto
-    public function set_content($content)
+    /************************ SETTER ************************/
+    public function set_content(string $content): Response
     {
-        $this->content = $content;
+        $this->response_data->set_content($content);
         return $this;
     }
 
-    public function content()
+    public function set_status(int $status): Response
     {
-        return $this->content;
-    }
-
-    public function status()
-    {
-        return $this->status;
-    }
-
-    public function set_status($status)
-    {
-        $this->status = $status;
+        $this->response_data->set_status($status);
         return $this;
     }
 
-    public function header(string $key, $values, bool $replace = true)
+    /************************ GETTER ************************/
+    /**
+     * Get the content of the response.
+     *
+     * @return string
+     */
+    public function get_content(): string
     {
-        if ($replace || !isset($this->headers[$key])) {
-            $this->headers[$key] = $values;
-        } else {
-            $this->headers[$key] = array_merge((array)$this->headers[$key], (array)$values);
-        }
+        return $this->response_data->get_content();
+    }
+
+    /**
+     * Get the status code of the response.
+     *
+     * @return int
+     */
+    public function get_status(): int
+    {
+        return $this->response_data->get_status();
+    }
+
+    /**
+     * Get the headers to be sent with the response.
+     * If a header name is provided, return the header value.
+     * Otherwise, return an array of all headers.
+     *
+     * @param string|null $param
+     * @return array|string|null
+     */
+    public function get_headers(string $param = null): array|string|null
+    {
+        return $this->response_data->get_headers($param);
+    }
+
+    /**
+     * Get the cookies to be sent with the response.
+     * If a cookie name is provided, return the cookie object.
+     * Otherwise, return an array of all cookies.
+     *
+     * @param string|null $name
+     * @return array|Cookie|null
+     */
+    public function get_cookies(string $name = null): array|Cookie|null
+    {
+        return $this->response_data->get_cookies($name);
+    }
+
+    /**
+    * Get the exception that occurred during the request.
+    *
+    * @return Throwable
+    */
+    public function get_exception(): Throwable
+    {
+        return $this->exception;
+    }
+
+    /**
+     * Get the callback function to be executed for streaming responses.
+     * 
+     * @return callable
+     */
+    public function get_callback(): callable
+    {
+        return $this->callback;
+    }
+
+    /**
+     * Set the headers to be sent with the response.
+     * 
+     * @param string $key
+     * @param mixed $value
+     * @param bool $replace
+     * @return Response
+     */
+    public function header(string $key, string $value, bool $replace = true): Response
+    {
+        $this->response_data->add_header($key, $value, $replace);
         return $this;
     }
 
-    public function with_headers(array $headers)
+    /**
+     * Set multiple headers at once.
+     * 
+     * @param array $headers
+     * @return Response
+     */
+    public function with_headers(array $headers): Response
     {
         foreach ($headers as $key => $value) {
             $this->header($key, $value);
@@ -67,64 +136,123 @@ class Response
         return $this;
     }
 
-    public function cookie($cookie)
+    /**
+     * Set a cookie to be sent with the response.
+     * 
+     * @param string $name
+     * @param string $value
+     * @param int $minutes
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $httpOnly
+     * @return Response
+     */
+    public function cookie(string $name, string $value, int $minutes = 60, string $path = '/', string $domain = '', bool $secure = false, bool $httpOnly = false): Response
     {
-        $this->cookies[] = $cookie;
+        $this->response_data->add_cookie(
+            $name, 
+            $value, 
+            $minutes, 
+            $path, 
+            $domain, 
+            $secure, 
+            $httpOnly
+        );
         return $this;
     }
 
-    public function with_cookie($cookie)
+    /**
+     * Remove a cookie from the response.
+     * 
+     * @param string $name
+     * @return Response
+     */
+    public function without_cookie(string $name): Response
     {
-        return $this->cookie($cookie);
-    }
-
-    public function without_cookie($cookie, string $path = null, string $domain = null)
-    {
-        $this->cookies[] = ['cookie' => $cookie, 'expire' => true, 'path' => $path, 'domain' => $domain];
+        $this->response_data->remove_cookie($name);
         return $this;
     }
 
-    public function with_exception(Throwable $e)
+    /**
+     * Set the exception that occurred during the request.
+     * 
+     * @param Throwable $e
+     * @return Response
+     */
+    public function with_exception(Throwable $e): Response
     {
         $this->exception = $e;
         return $this;
     }
 
-    // Funzioni per risposta JSON
-    public function json($data = [], $status = 200, array $headers = [], $options = 0)
+    /**
+     * Set the response to be json type 
+     * 
+     * @param mixed $data
+     * @param mixed $status
+     * @param array $headers
+     * @param mixed $flags
+     * @return Response
+     */
+    public function json(array $data = [], int $status = 200, array $headers = [], int $flags = 0): Response
     {
-        $this->make(json_encode($data, $options), $status, $headers);
-        $this->header('Content-Type', 'application/json');
-        return $this;
-    }
-
-    // Funzioni per risposta JSONP
-    public function jsonp($callback, $data = [], $status = 200, array $headers = [], $options = 0)
-    {
-        $jsonData = json_encode($data, $options);
-        $this->make("{$callback}({$jsonData})", $status, $headers);
-        $this->header('Content-Type', 'application/javascript');
-        return $this;
-    }
-
-    // Streaming
-    public function stream($callback, $status = 200, array $headers = [])
-    {
-        $this->status = $status;
-        $this->headers = $headers;
-        $this->callback = $callback;
+        $this->make(json_encode($data, $flags), $status, $headers)
+            ->header('Content-Type', 'application/json');
 
         return $this;
     }
 
-    // Download
-    public function download($file, $name = null, array $headers = [], $disposition = 'attachment')
+    /**
+     * Set the response to be jsonp type.
+     * 
+     * @param string $callback
+     * @param mixed $data
+     * @param mixed $status
+     * @param array $headers
+     * @param mixed $flags
+     * @return Response
+     */
+    public function jsonp(string $callback, array $data = [], int $status = 200, array $headers = [], int $flags = 0): Response
     {
-        $this->status = 200;
-        $this->headers = array_merge($headers, [
-            'Content-Disposition' => "{$disposition}; filename={$name}",
-            'Content-Length' => filesize($file)
-        ]);
+        $jsonData = json_encode($data, $flags);
+        $this->make("{$callback}({$jsonData})", $status, $headers)
+            ->header('Content-Type', 'application/javascript');
+        
+        return $this;
+    }
+
+    /**
+     * Set the response to be a stream.
+     * 
+     * @param callable $callback
+     * @param mixed $status
+     * @param array $headers
+     * @return Response
+     */
+    public function stream(callable $callback, int $status = 200, array $headers = []): Response
+    {
+        $this->make('', $status, $headers)
+            ->callback = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Set the response to be a file download.
+     * 
+     * @param string $file
+     * @param string|null $name
+     * @param array $headers
+     * @param string $disposition
+     * @return Response
+     */
+    public function download(string $file, string $name = null, array $headers = [], string $disposition = 'attachment'): Response
+    {
+        $this->make('', 200, $headers)
+            ->header('Content-Type', 'application/octet-stream')
+            ->header('Content-Disposition', "{$disposition}; filename={$name}")
+            ->header('Content-Length', filesize($file));
 
         ob_clean();
         flush();
@@ -133,39 +261,34 @@ class Response
         return $this;
     }
 
-    public function no_content($status = 204, array $headers = [])
+    /**
+     * Set the response with no content
+     * 
+     * @param int $status
+     * @param array $headers
+     * @return Response
+     */
+    public function no_content(int $status = 204, array $headers = []): Response
     {
         $this->make('', $status, $headers);
         return $this;
     }
 
-    // Send the response
-    public function send()
+    /**
+     * Set the response to redirect to a different URL.
+     * 
+     * @return void
+     */
+    public function send(): void
     {
-        http_response_code($this->status);
-
         if ($this->exception) {
-            $this->header('Content-Type', 'text/plain');
-            echo $this->exception->getMessage();
-            return;
-        }
-
-        foreach ($this->headers as $key => $value) {
-            header("{$key}: {$value}");
-        }
-
-        foreach ($this->cookies as $cookie) {
-            if (is_array($cookie) && isset($cookie['expire']) && $cookie['expire']) {
-                setcookie($cookie['cookie'], '', time() - 3600, $cookie['path'] ?? '/', $cookie['domain'] ?? '');
-            } else {
-                setcookie($cookie);
-            }
+            throw $this->exception;
         }
 
         if ($this->callback) {
             call_user_func($this->callback);
-        } else {
-            echo $this->content;
-        }
+        } 
+
+        parent::send();
     }
 }

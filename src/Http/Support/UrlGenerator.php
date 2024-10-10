@@ -1,6 +1,6 @@
 <?php
 
-namespace App\HTTP;
+namespace App\HTTP\Support;
 
 class UrlGenerator
 {
@@ -11,10 +11,10 @@ class UrlGenerator
      * @param bool|null $secure
      * @return string
      */
-    public function to($path, $secure = null)
+    public static function to($path, $secure = null)
     {
         $scheme = $secure ? 'https://' : 'http://';
-        $host = $_SERVER['HTTP_HOST'];
+        $host = request()->host();
         return $scheme . $host . '/' . ltrim($path, '/');
     }
 
@@ -25,10 +25,10 @@ class UrlGenerator
      * @param array $parameters
      * @return string
      */
-    public function route($route, $parameters = [])
+    public static function route($route, $parameters = [])
     {
         // Supponiamo che ci sia una mappa delle rotte per trovare i parametri dinamici
-        $url = $this->to($route);
+        $url = self::to($route);
 
         if (!empty($parameters)) {
             // Questo permette di gestire parametri come /user/{id}
@@ -52,12 +52,12 @@ class UrlGenerator
      * @param array $parameters
      * @return string
      */
-    public function action($action, $parameters = [])
+    public static function action($action, $parameters = [])
     {
         // Esempio: HomeController@index
         list($controller, $method) = explode('@', $action);
 
-        $url = $this->to("/{$controller}/{$method}");
+        $url = self::to("/{$controller}/{$method}");
 
         // Aggiungi i parametri query se ce ne sono
         if (!empty($parameters)) {

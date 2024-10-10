@@ -2,10 +2,10 @@
 
 namespace App\Exceptions\HTTP;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
-class NotFoundException extends AppException
+class NotFoundException extends BaseException
 {
     protected $message = 'Page not found';
     protected $code = 404;

@@ -2,10 +2,10 @@
 
 namespace App\Exceptions\HTTP;
 
-use App\Exceptions\AppException;
+use App\Exceptions\BaseException;
 use Exception;
 
-class MethodNotAllowedException extends AppException
+class MethodNotAllowedException extends BaseException
 {
     protected $message = 'HTTP Method Not Allowed';
     protected $code = 405;

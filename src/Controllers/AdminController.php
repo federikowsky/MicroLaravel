@@ -2,10 +2,10 @@
 
 namespace App\Controllers;
 
-use App\Controllers\Controller;
+use App\Controllers\BaseController;
 use App\Services\AuthService;
 
-class AdminController extends Controller
+class AdminController extends BaseController
 {
     protected $authService;
 

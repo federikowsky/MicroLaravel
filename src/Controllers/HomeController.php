@@ -2,11 +2,9 @@
 
 namespace App\Controllers;
 
-use App\Controllers\Controller;
+use App\Controllers\BaseController;
 
-use App\Core\ServiceContainer;
-
-class HomeController extends Controller
+class HomeController extends BaseController
 {
     public function __construct()
     {

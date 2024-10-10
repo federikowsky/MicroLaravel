@@ -18,7 +18,7 @@ class AuthService
     public function current_user()
     {
         if ($this->is_user_logged_in()) {
-            return $_SESSION['username'];
+            return session()->get('username');
         }
         return null;
     }
@@ -31,7 +31,7 @@ class AuthService
     public function is_admin(): bool
     {
         if ($this->is_user_logged_in()) {
-            $user = $this->userModel->find_by_id($_SESSION['user_id']);
+            $user = $this->userModel->find_by_id(session()->get('user_id'));
             return isset($user['is_admin']) && $user['is_admin'] == 1;
         }
         return false;
@@ -40,13 +40,13 @@ class AuthService
     public function is_user_logged_in()
     {
         // check the session
-        if (isset($_SESSION['username'])) {
+        if (session()->has('username') && session()->has('user_id')) {
             return true;
         }
 
         // check the remember_me in cookie
-        if (isset($_COOKIE['remember_me'])) {
-            $token = htmlspecialchars($_COOKIE['remember_me']);
+        if (request()->has_cookie('remember_me')) {
+            $token = htmlspecialchars(request()->cookie('remember_me'));
         } else 
             $token = null;
 
@@ -106,7 +106,7 @@ class AuthService
             echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
         }
     }
-
+    
     public function register(string $email, string $username, string $password, string $activation_code): bool
     {
         return $this->userModel->create($email, $username, $password, $activation_code);
@@ -117,10 +117,10 @@ class AuthService
     private function log_user_in(array $user): bool
     {
         // prevent session fixation attack
-        if (session_regenerate_id()) {
+        if (session()->regenerate()) {
             // set username & id in the session
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['user_id'] = $user['id'];
+            session()->set('username', $user['username']);
+            session()->set('user_id', $user['id']);
             return true;
         }
         return false;
@@ -145,13 +145,19 @@ class AuthService
     {
         if ($this->is_user_logged_in())
         {
-            $this->userModel->delete_user_token($_SESSION['user_id']);
-            unset($_SESSION['username'], $_SESSION['user_id']);
-            if (isset($_COOKIE['remember_me'])) {
-                unset($_COOKIE['remember_me']);
-                setcookie('remember_me', '', -1);
+            $this->userModel->delete_user_token(session()->get('user_id'));
+            session()->remove('username');
+            session()->remove('user_id');
+            if (request()->has_cookie('remember_me')) {
+                /**
+                 * remove the remember_me cookie from the request object
+                 * so that it will not be accessibile in the current request
+                 */
+                request()->remove_cookie('remember_me');
+                // set the cookie to be expired in the browser side
+                response()->without_cookie('remember_me');
             }
-            session_destroy();
+            session()->destroy();
         }
         
     }
@@ -204,7 +210,7 @@ class AuthService
         $expiry = date('Y-m-d H:i:s', $expired_seconds);
         
         if ($this->userModel->insert_user_token($user_id, $selector, $validator, $expiry)) {
-            setcookie('remember_me', $token, $expired_seconds);
+            response()->cookie('remember_me', $token, $expired_seconds);
         }
     }
 

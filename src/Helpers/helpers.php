@@ -1,12 +1,44 @@
 <?php
 
+use App\Facades\BaseFacade;
+
+use App\Services\AssetsService;
+
+use App\HTTP\ {
+    View,
+    Response,
+    Redirect,
+    Request
+};
+
+use App\Core\ {
+    Flash,
+    Session
+};
+
+
+/**
+ * return request object from the container
+ */
+if (!function_exists('request')) {
+    function request(): Request
+    {
+        $request_ob = (object) BaseFacade::get_container()->getLazy(Request::class);
+        return $request_ob;
+    }
+}
+
 /**
  * return response object from the container
  */
 if (!function_exists('response')) {
-    function response($content = '', $status = 200, array $headers = [])
+    function response($content = '', $status = 200, array $headers = []): Response
     {
-        return \App\Facades\Response::make($content, $status, $headers);
+        $response_ob = (object) BaseFacade::get_container()->getLazy(Response::class);
+        if ($content) {
+            return $response_ob->make($content, $status, $headers);
+        }
+        return $response_ob;
     }
 }
 
@@ -14,9 +46,15 @@ if (!function_exists('response')) {
  * return view object from the container
  */
 if (!function_exists('view')) {
-    function view($view, $data = [])
+    function view($view): View
     {
-        return \App\Facades\View::make($view, $data);
+        if (!$view) {
+            throw new \InvalidArgumentException('View not set.');
+        }
+
+        $view_ob = (object) BaseFacade::get_container()->getLazy(View::class);
+        
+        return $view_ob->make($view);
     }
 }
 
@@ -24,31 +62,55 @@ if (!function_exists('view')) {
  * return redirect object from the container
  */
 if (!function_exists('redirect')) {
-    function redirect($path = null, $status = 302, $headers = [], $secure = null)
+    function redirect($path = null, $status = 302, $headers = [], $secure = false): Redirect
     {
-        $redirector = \App\Facades\Redirect::make($path, $status, $headers);
+        $redirect_ob = (object) BaseFacade::get_container()->getLazy(Redirect::class);
 
         if ($path) {
-            // Se viene fornito un percorso, esegue subito la redirezione.
-            return $redirector->to($path, $status, $headers, $secure);
+            return $redirect_ob->to($path, $status, $headers, $secure);
         }
 
-        // Altrimenti, restituisce l'istanza per permettere il chaining come redirect()->to() o redirect()->route()
-        return $redirector;
+        return $redirect_ob;
     }
 }
 
 if (!function_exists('assets')) {
-    function assets($view)
+    function assets($view): array
     {
-        return \App\Facades\Assets::load($view);
+        if (!$view) {
+            throw new \InvalidArgumentException('Assets view not set.');
+        }
+
+        $assets_ob = (object) BaseFacade::get_container()->getLazy(AssetsService::class);
+        
+        return $assets_ob->load($view);
+    }
+}
+
+if (!function_exists('flash')) {
+    function flash(string $name = '', string $message = '', string $type = ''): Flash
+    {
+        $flash_ob = (object) BaseFacade::get_container()->getLazy(Flash::class);
+        if ($name || $message || $type) {
+            return $flash_ob->flash($name, $message, $type);
+        }
+        return $flash_ob;
     }
 }
 
 
-
-
-
+if (!function_exists('session')) {
+    function session($key = null, $value = null): Session
+    {
+        $session_ob = (object) BaseFacade::get_container()->getLazy(Session::class);
+        if ($key && !$value) {
+            return $session_ob->get($key, $value);
+        } elseif ($key && $value) {
+            return $session_ob->set($key, $value);
+        }
+        return $session_ob;
+    }
+}
 
 
 /**
@@ -58,11 +120,11 @@ if (!function_exists('assets')) {
  */
 function generate_csrf_token(): string
 {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // 64-character token
+    if (!session()->token()) {
+        session()->regenerate_token();
     }
 
-    return $_SESSION['csrf_token'];
+    return session()->token();
 }
 
 /**
@@ -89,26 +151,6 @@ function error_class(array $errors, string $field): string
     return isset($errors[$field]) ? 'error' : '';
 }
 
-/**
- * Return true if the request method is POST
- *
- * @return boolean
- */
-function is_post_request(): bool
-{
-    return strtoupper($_SERVER['REQUEST_METHOD']) === 'POST';
-}
-
-/**
- * Return true if the request method is GET
- *
- * @return boolean
- */
-function is_get_request(): bool
-{
-    return strtoupper($_SERVER['REQUEST_METHOD']) === 'GET';
-}
-
 
 /**
  * Flash data specified by $keys from the $_SESSION
@@ -119,9 +161,9 @@ function session_flash(...$keys): array
 {
     $data = [];
     foreach ($keys as $key) {
-        if (isset($_SESSION[$key])) {
-            $data[] = $_SESSION[$key];
-            unset($_SESSION[$key]);
+        if (session()->has($key)) {
+            $data[] = session()->get($key);
+            session()->remove($key);
         } else {
             $data[] = [];
         }
