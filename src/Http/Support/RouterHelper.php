@@ -21,16 +21,26 @@ class RouterHelper
      */
     public function route_is(string $pattern): bool
     {
-        $routes = $this->router->get_routes();
-        $regex = '#^' . preg_quote($pattern, '#') . '$#';
-        $regex = str_replace('\*', '.*', $regex);
+        // Substitute * with .* and . with \.
+        $regex = str_replace('.', '\.', $pattern);
+        $regex = str_replace('*', '.*', $regex);
+        $regex = '#^' . $regex . '$#';
 
-        foreach ($this->router->get_routes() as $routes) {
-            if (isset($routes['name']) && preg_match($regex, $routes['name'])) {
+        // Compila il pattern per i caratteri tra parentesi quadre (es: [A-Za-z0-9_-])
+        // e gestisci correttamente i caratteri speciali come @, !, #.
+        $regex = preg_replace_callback('/\[(.*?)\]/', function ($matches) {
+            // Mantieni il contenuto della parentesi quadra come parte della regex
+            return '[' . $matches[1] . ']';
+        }, $regex);
+    
+        // Scorri le route e verifica se c'è una corrispondenza con il pattern regex generato
+        foreach ($this->router->get_routes() as $route) {
+            // Verifica se la rotta ha un nome e se corrisponde al pattern
+            if (isset($route['name']) && preg_match($regex, $route['name'])) {
                 return true;
             }
         }
-
+    
         return false;
     }
 
@@ -73,7 +83,7 @@ class RouterHelper
      */
     public function get_curr_route_name(): ?string
     {
-        $uri = request()->header("REQUEST_URI") ?? '/';
+        $uri = request()->server("REQUEST_URI") ?? '/';
         $currentRoute = $this->router->find_route($uri);
         return $currentRoute['name'] ?? null;
     }

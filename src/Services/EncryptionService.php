@@ -26,6 +26,10 @@ class EncryptionService
 
     public function decrypt($encryptedData)
     {
+        if (!$encryptedData) {
+            return '';
+        }
+        
         $encryptedData = base64_decode($encryptedData);
         $ivLength = openssl_cipher_iv_length($this->cipher);
         $iv = substr($encryptedData, 0, $ivLength);

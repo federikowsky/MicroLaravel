@@ -43,7 +43,6 @@ class Redirect extends BaseResponse
         return $this->response_data->get_headers();
     }
     
-
     /**
      * Redirect to a specific path.
      * 
@@ -217,11 +216,8 @@ class Redirect extends BaseResponse
             throw new \Exception('Input data must be set.');
         }
 
-        foreach($input as $key => $value) {
-            session()->set('inputs', [
-                $key => $value
-            ]);
-        }
+        session()->set('inputs', $input);
+
         return $this;
     }
 

@@ -128,7 +128,7 @@ class Request
      * Get the host of the request.
      * @return string
      */
-    public function host(): string
+    public function host(): ?string
     {
         return $this->server('HTTP_HOST');
     }

@@ -1,8 +1,6 @@
 
 <?php
 
-require_once __DIR__ . '/../../config/app.php';
-
 use App\Core\ServiceContainer;
 use PHPUnit\Framework\TestCase;
 use App\HTTP\Response;
@@ -17,11 +15,13 @@ class ResponseTest extends TestCase
 
     protected function setUp(): void
     {
+        $APP_KEY = 'base64:5Z9';
+
         $this->container = new ServiceContainer();
         BaseFacade::set_container($this->container);
 
-        $this->container->registerLazy(EncryptionService::class, function () {
-            return new EncryptionService(APP_KEY);
+        $this->container->registerLazy(EncryptionService::class, function () use ($APP_KEY) {
+            return new EncryptionService($APP_KEY);
         });
     }
 

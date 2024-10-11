@@ -27,24 +27,40 @@ class UrlGenerator
      * @param array $parameters
      * @return string
      */
-    public static function route($route, $parameters = [])
+    public static function route(string $route, array $parameters = []): string
     {
-        $url = self::to(RouterHelper::get_route_uri($route));
+        $uri = RouterHelper::get_route_uri($route);
 
-        if (!empty($parameters)) {
-            // handle parameter like /user/{id}
-            $url = preg_replace_callback('/\{[^\}]+\}/', function ($matches) use (&$parameters) {
-                return array_shift($parameters);
-            }, $url);
-
-            // Add query parameters if any
-            if (!empty($parameters)) {
-                $url .= '?' . http_build_query($parameters);
-            }
+        if (!$uri) {
+            throw new \Exception("Route '{$route}' not found.");
         }
 
-        return $url;
+        // Trova i placeholder come {slug} o {id} nella rotta
+        $pattern = '/\{([^\}]+)\}/';
+
+        // Rimuovi i parametri utilizzati per i placeholder dalla lista dei parametri
+        $uri = preg_replace_callback($pattern, function ($matches) use (&$parameters) {
+            $paramName = $matches[1];
+
+            // Se il parametro esiste tra quelli forniti, usalo per sostituire il placeholder
+            if (isset($parameters[$paramName])) {
+                $value = $parameters[$paramName];
+                unset($parameters[$paramName]);
+                return $value;
+            }
+
+            // Se non esiste, lancia un'eccezione
+            throw new \Exception("Missing required parameter: '{$paramName}' for route.");
+        }, $uri);
+
+        // Aggiungi i parametri rimanenti come query string
+        if (!empty($parameters)) {
+            $uri .= '?' . http_build_query($parameters);
+        }
+
+        return self::to($uri);
     }
+
 
     /**
      * Make a URL from action
@@ -53,16 +69,26 @@ class UrlGenerator
      * @param array $parameters
      * @return string
      */
-    public static function action($action, $parameters = [])
+    public static function action(string $action, array $parameters = []): string
     {
-        // e.g. HomeController@index
-        $url = self::to(RouterHelper::get_action_uri($action));
+        // e.g., HomeController@index
+        $uri = RouterHelper::get_action_uri($action);
 
-        // Add query parameters if any
-        if (!empty($parameters)) {
-            $url .= '?' . http_build_query($parameters);
+        if (!$uri) {
+            throw new \Exception("Action '{$action}' not found.");
         }
 
-        return $url;
+        // Replace placeholders with parameters if needed
+        $pattern = '/\{[^\}]+\}/';
+        $uri = preg_replace_callback($pattern, function ($matches) use (&$parameters) {
+            return array_shift($parameters) ?? $matches[0];
+        }, $uri);
+
+        // If there are remaining parameters, append them as query string
+        if (!empty($parameters)) {
+            $uri .= '?' . http_build_query($parameters);
+        }
+
+        return self::to($uri);
     }
 }
