@@ -1,6 +1,6 @@
 <?php
 
-use App\Facades\BaseFacade;
+use App\Core\ServiceContainer;
 
 use App\Services\AssetsService;
 
@@ -23,7 +23,7 @@ use App\Core\ {
 if (!function_exists('request')) {
     function request(): Request
     {
-        $request_ob = (object) BaseFacade::get_container()->getLazy(Request::class);
+        $request_ob = (object) ServiceContainer::get_container()->getLazy(Request::class);
         return $request_ob;
     }
 }
@@ -34,7 +34,7 @@ if (!function_exists('request')) {
 if (!function_exists('response')) {
     function response($content = '', $status = 200, array $headers = []): Response
     {
-        $response_ob = (object) BaseFacade::get_container()->getLazy(Response::class);
+        $response_ob = (object) ServiceContainer::get_container()->getLazy(Response::class);
         if ($content) {
             return $response_ob->make($content, $status, $headers);
         }
@@ -52,7 +52,7 @@ if (!function_exists('view')) {
             throw new \InvalidArgumentException('View not set.');
         }
 
-        $view_ob = (object) BaseFacade::get_container()->getLazy(View::class);
+        $view_ob = (object) ServiceContainer::get_container()->getLazy(View::class);
         
         return $view_ob->make($view);
     }
@@ -64,7 +64,7 @@ if (!function_exists('view')) {
 if (!function_exists('redirect')) {
     function redirect($path = null, $status = 302, $headers = [], $secure = false): Redirect
     {
-        $redirect_ob = (object) BaseFacade::get_container()->getLazy(Redirect::class);
+        $redirect_ob = (object) ServiceContainer::get_container()->getLazy(Redirect::class);
 
         if ($path) {
             return $redirect_ob->to($path, $status, $headers, $secure);
@@ -81,7 +81,7 @@ if (!function_exists('assets')) {
             throw new \InvalidArgumentException('Assets view not set.');
         }
 
-        $assets_ob = (object) BaseFacade::get_container()->getLazy(AssetsService::class);
+        $assets_ob = (object) ServiceContainer::get_container()->getLazy(AssetsService::class);
         
         return $assets_ob->load($view);
     }
@@ -90,7 +90,7 @@ if (!function_exists('assets')) {
 if (!function_exists('flash')) {
     function flash(string $name = '', string $message = '', string $type = ''): Flash
     {
-        $flash_ob = (object) BaseFacade::get_container()->getLazy(Flash::class);
+        $flash_ob = (object) ServiceContainer::get_container()->getLazy(Flash::class);
         if ($name || $message || $type) {
             return $flash_ob->flash($name, $message, $type);
         }
@@ -102,7 +102,7 @@ if (!function_exists('flash')) {
 if (!function_exists('session')) {
     function session($key = null, $value = null): Session
     {
-        $session_ob = (object) BaseFacade::get_container()->getLazy(Session::class);
+        $session_ob = (object) ServiceContainer::get_container()->getLazy(Session::class);
         if ($key && !$value) {
             return $session_ob->get($key, $value);
         } elseif ($key && $value) {

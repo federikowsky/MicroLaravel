@@ -3,13 +3,12 @@
 use App\Core\ServiceContainer;
 use App\Core\Session;
 use App\HTTP\Redirect;
-use App\HTTP\Support\UrlGenerator;
 use App\Facades\BaseFacade;
 use App\Session\SessionManager;
+use App\Session\Contracts\SessionDriverInterface;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 
 
@@ -21,7 +20,7 @@ class RedirectTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'localhost';
         // Supponiamo che tu stia usando un service container nel tuo progetto
-        $this->container = new ServiceContainer();
+        $this->container = ServiceContainer::get_instance();
 
         BaseFacade::set_container($this->container);
         
@@ -33,22 +32,10 @@ class RedirectTest extends TestCase
         $session_manager = new SessionManager($session_config, $this->container);
 
         // Simula una sessione per la gestione degli input flashati
-        $session = new Session($session_manager->driver());
-        $this->container->registerLazy(Session::class, function() use ($session) {
-            return $session;
+        $this->container->registerLazy(Session::class, function() use ($session_manager) {
+            return new Session($session_manager->driver());;
         });
 
-        // $this->container->registerLazy(Response::class, function() {
-        //     return new Response();
-        // });
-
-        // $this->container->registerLazy(UrlGenerator::class, function () {
-        //     return new UrlGenerator();
-        // });
-
-        // $this->container->registerLazy(Redirect::class, function () {
-        //     return new Redirect($this->container->getLazy(UrlGenerator::class));
-        // });
     }
 
     public function testRedirectToLoginFromHome()
@@ -78,7 +65,7 @@ class RedirectTest extends TestCase
 
         // Verifica che l'input sia stato flashato nella sessione
         $session = $this->container->getLazy(Session::class);
-        $x = $session->get('inputs')['username'];
         $this->assertEquals('wronguser', $session->get('inputs')['username']);
     }
+
 }

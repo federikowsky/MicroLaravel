@@ -10,7 +10,6 @@ class Session
     public function __construct(SessionDriverInterface $driver)
     {
         $this->driver = $driver;
-        // $this->driver->start();
     }
 
     public function get($key, $default = null)

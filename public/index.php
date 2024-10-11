@@ -9,14 +9,15 @@ use App\Core\ExceptionManager;
 use App\Core\Logger;
 use App\HTTP\Router;
 
-// Imposta il gestore delle eccezioni
+// Set the exception handler
 $exceptionHandler = new ExceptionManager($container->getLazy(Logger::class));
 set_exception_handler([$exceptionHandler, 'handle']);
 
-// Inizializza il router
-$router = new Router($container);
+// Initialize the router
+$router = $container->getLazy(Router::class);
 
-// Carica le rotte dai file di configurazione modulari
+
+// Load the routes from the configuration files
 $router->load_routes([
     __DIR__ . '/../routes/app.php',
     __DIR__ . '/../routes/auth.php',
@@ -25,9 +26,6 @@ $router->load_routes([
     __DIR__ . '/../routes/post.php'
 ]);
 
-// Analizza l'URI richiesta
+// Route the request
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $router->route($uri);
-
-
-// redirect non funzionante su / dopo login

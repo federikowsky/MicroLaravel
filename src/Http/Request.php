@@ -2,6 +2,7 @@
 
 namespace App\HTTP;
 
+use App\Core\ServiceContainer;
 use DateTime;
 use DateTimeZone;
 
@@ -64,6 +65,7 @@ class Request
         return fnmatch($pattern, $this->path());
     }
 
+
     /**
      * Check if the request path matches a route pattern.
      * @param string $pattern
@@ -71,8 +73,21 @@ class Request
      */
     public function route_is(string $pattern): bool
     {
-        return $this->is($pattern);
+        $router = ServiceContainer::get_instance()->getLazy(Router::class);
+
+        $regex = '#^' . preg_quote($pattern, '#') . '$#';
+        $regex = str_replace('\*', '.*', $regex);
+
+        foreach ($router->get_routes() as $routes) {
+            if (isset($routes['name']) && preg_match($regex, $routes['name'])) {
+                return true;
+            }
+        }
+
+        return false;
+
     }
+
 
     /**
      * Check if the request is secure, i.e. using HTTPS.

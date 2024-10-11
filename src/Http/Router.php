@@ -23,7 +23,7 @@ class Router
      * Carica tutte le rotte dai file di configurazione modulari
      * @param array $routeFiles
      */
-    public function load_routes(array $routeFiles)
+    public function load_routes(array $routeFiles): void
     {
         // Controlla se esiste il file di cache
         if (file_exists($this->cacheFile)) {
@@ -34,6 +34,8 @@ class Router
                 if (file_exists($file)) {
                     $routeConfig = require $file;
                     $this->add_routes($routeConfig['routes'], $routeConfig['middleware'] ?? []);
+                } else {
+                    throw new \InvalidArgumentException("Route file '$file' not found.");
                 }
             }
 
@@ -47,18 +49,29 @@ class Router
      * @param array $routes
      * @param array $middleware
      */
-    protected function add_routes(array $routes, array $groupMiddleware)
+    protected function add_routes(array $routes, array $groupMiddleware): void
     {
         foreach ($routes as $route => $config) {
             $this->routes[$route] = [
                 'controller' => $config['controller'],
                 'method' => $config['method'],
+                'name' => $config['name'] ?? null,
                 'middleware' => array_unique(array_merge($groupMiddleware, $config['middleware'] ?? []))
             ];
         }
     }
+    
+    public function get_uri(string $route_name): ?string
+    {
+        foreach ($this->routes as $route => $config) {
+            if ($config['name'] === $route_name) {
+                return $route;
+            }
+        }
+        return null;
+    }
 
-    public function get_routes(?string $route = null)
+    public function get_routes(?string $route = null): ?array
     {
         if ($route) {
             return $this->routes[$route] ?? null;

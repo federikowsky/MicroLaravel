@@ -8,6 +8,18 @@ use ReflectionClass;
 class ServiceContainer {
     protected $services = [];
 
+    public static function get_instance(): ServiceContainer {
+        static $instance = null;
+        if ($instance === null) {
+            $instance = new static();
+        }
+        return $instance;
+    }
+
+    public static function get_container(): ServiceContainer {
+        return static::get_instance();
+    }
+
     /**
      * Store a service in the container.
      *

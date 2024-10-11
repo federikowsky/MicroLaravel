@@ -1,8 +1,9 @@
 <?php
 
+use App\Core\ServiceContainer;
 use PHPUnit\Framework\TestCase;
 use App\Http\Request;
-use GuzzleHttp\Psr7\Query;
+use App\HTTP\Router;
 
 class RequestTest extends TestCase
 {
@@ -45,6 +46,18 @@ class RequestTest extends TestCase
 
         // Crea l'istanza della richiesta
         $this->request = new Request();
+        
+        $container = ServiceContainer::get_container();
+        $router = new Router($container);
+        $router->load_routes([
+            __DIR__ . '/../../routes/app.php',
+            __DIR__ . '/../../routes/auth.php',
+            __DIR__ . '/../../routes/admin.php',
+            __DIR__ . '/../../routes/user.php',
+            __DIR__ . '/../../routes/post.php'
+        ]);
+
+        $container->register(Router::class, $router);
     }
 
     public function test_path()
@@ -61,7 +74,16 @@ class RequestTest extends TestCase
     public function test_route_is()
     {
         $this->assertTrue($this->request->route_is('user.*'));
-        $this->assertFalse($this->request->route_is('admin.*'));
+        $this->assertTrue($this->request->route_is('admin.*'));
+        $this->assertTrue($this->request->route_is('admin.*.create'));
+        $this->assertTrue($this->request->route_is('admin.posts.*'));
+        $this->assertTrue($this->request->route_is('post.*'));
+        $this->assertFalse($this->request->route_is('nonexistent.*'));
+        $this->assertFalse($this->request->route_is('admin.posts.*.nonexistent'));
+        $this->assertFalse($this->request->route_is('admin.posts.nonexistent'));
+        $this->assertFalse($this->request->route_is('admin.posts.nonexistent.*'));
+        $this->assertFalse($this->request->route_is('admin.posts.nonexistent.*.create'));
+        $this->assertFalse($this->request->route_is('admin.posts.nonexistent.create'));
     }
 
     public function test_url()

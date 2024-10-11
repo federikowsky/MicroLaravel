@@ -9,6 +9,9 @@ use App\Core\ {
 use App\Facades\ {
     BaseFacade
 };
+use App\HTTP\ {
+    Router
+};
 
 use App\Services\ {
     EncryptionService
@@ -26,7 +29,7 @@ $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
 // Initialize the service container
-$container = new ServiceContainer();
+$container = ServiceContainer::get_instance();
 
 
 /**
@@ -109,3 +112,7 @@ $container->registerLazy(EncryptionService::class, function (): EncryptionServic
 /****************************************************************************************************************/
 
 BaseFacade::set_container($container);
+
+$container->registerLazy(Router::class, function() use ($container): Router {
+    return new Router($container);
+});

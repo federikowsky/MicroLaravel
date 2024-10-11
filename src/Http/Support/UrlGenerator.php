@@ -2,6 +2,9 @@
 
 namespace App\HTTP\Support;
 
+use App\Core\ServiceContainer;
+use App\HTTP\Router;
+
 class UrlGenerator
 {
     /**
@@ -27,8 +30,9 @@ class UrlGenerator
      */
     public static function route($route, $parameters = [])
     {
-        // Supponiamo che ci sia una mappa delle rotte per trovare i parametri dinamici
-        $url = self::to($route);
+        $router = ServiceContainer::get_container()->get(Router::class);
+
+        $url = self::to($router->get_uri($route));
 
         if (!empty($parameters)) {
             // Questo permette di gestire parametri come /user/{id}
