@@ -3,6 +3,7 @@
 namespace App\HTTP;
 
 use App\Core\ServiceContainer;
+use App\Facades\RouterHelper;
 use DateTime;
 use DateTimeZone;
 
@@ -73,19 +74,7 @@ class Request
      */
     public function route_is(string $pattern): bool
     {
-        $router = ServiceContainer::get_instance()->getLazy(Router::class);
-
-        $regex = '#^' . preg_quote($pattern, '#') . '$#';
-        $regex = str_replace('\*', '.*', $regex);
-
-        foreach ($router->get_routes() as $routes) {
-            if (isset($routes['name']) && preg_match($regex, $routes['name'])) {
-                return true;
-            }
-        }
-
-        return false;
-
+        return RouterHelper::route_is($pattern);
     }
 
 

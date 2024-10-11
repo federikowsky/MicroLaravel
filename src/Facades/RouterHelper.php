@@ -3,13 +3,13 @@
 namespace App\Facades;
 
 use App\Facades\BaseFacade;
-use App\HTTP\View as ViewService;
+use App\HTTP\Support\RouterHelper as RouterHelperService;
 
-class View extends BaseFacade
+class RouterHelper extends BaseFacade
 {
     protected static function get_facade_accessor()
     {
         // name of the service in the container
-        return ViewService::class;
+        return RouterHelperService::class;
     }
 }

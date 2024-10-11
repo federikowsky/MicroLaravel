@@ -60,16 +60,6 @@ class Router
             ];
         }
     }
-    
-    public function get_uri(string $route_name): ?string
-    {
-        foreach ($this->routes as $route => $config) {
-            if ($config['name'] === $route_name) {
-                return $route;
-            }
-        }
-        return null;
-    }
 
     public function get_routes(?string $route = null): ?array
     {
@@ -86,7 +76,7 @@ class Router
      */
     public function route(string $uri): void
     {
-        $routeConfig = $this->findRoute($uri);
+        $routeConfig = $this->find_route($uri);
 
         if ($routeConfig) {
             $controllerName = $routeConfig['controller'];
@@ -111,7 +101,7 @@ class Router
      * @param string $uri
      * @return array|null
      */
-    protected function findRoute(string $uri)
+    public function find_route(string $uri)
     {
         foreach ($this->routes as $route => $config) {
             // Usa una regex per sostituire i parametri dinamici come {id}

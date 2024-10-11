@@ -113,19 +113,8 @@ if (!function_exists('session')) {
 }
 
 
-/**
- * Generate a CSRF token
- *
- * @return string
- */
-function generate_csrf_token(): string
-{
-    if (!session()->token()) {
-        session()->regenerate_token();
-    }
 
-    return session()->token();
-}
+
 
 /**
  * Return a CSRF field
@@ -134,7 +123,11 @@ function generate_csrf_token(): string
  */
 function csrf_field(): string
 {
-    $token = generate_csrf_token();
+    if (!session()->token()) {
+        session()->regenerate_token();
+    }
+
+    $token = session()->token();
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
 }
 

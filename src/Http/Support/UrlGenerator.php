@@ -2,13 +2,12 @@
 
 namespace App\HTTP\Support;
 
-use App\Core\ServiceContainer;
-use App\HTTP\Router;
+use App\Facades\RouterHelper;
 
 class UrlGenerator
 {
     /**
-     * Crea un URL a partire da un percorso relativo.
+     * Make a URL from relative path
      *
      * @param string $path
      * @param bool|null $secure
@@ -22,7 +21,7 @@ class UrlGenerator
     }
 
     /**
-     * Genera un URL per una rotta specifica.
+     * Make a URL from route name
      *
      * @param string $route
      * @param array $parameters
@@ -30,17 +29,15 @@ class UrlGenerator
      */
     public static function route($route, $parameters = [])
     {
-        $router = ServiceContainer::get_container()->get(Router::class);
-
-        $url = self::to($router->get_uri($route));
+        $url = self::to(RouterHelper::get_route_uri($route));
 
         if (!empty($parameters)) {
-            // Questo permette di gestire parametri come /user/{id}
+            // handle parameter like /user/{id}
             $url = preg_replace_callback('/\{[^\}]+\}/', function ($matches) use (&$parameters) {
                 return array_shift($parameters);
             }, $url);
 
-            // Aggiungi i parametri query se ce ne sono
+            // Add query parameters if any
             if (!empty($parameters)) {
                 $url .= '?' . http_build_query($parameters);
             }
@@ -50,7 +47,7 @@ class UrlGenerator
     }
 
     /**
-     * Genera un URL per un'azione del controller.
+     * Make a URL from action
      *
      * @param string $action
      * @param array $parameters
@@ -58,12 +55,10 @@ class UrlGenerator
      */
     public static function action($action, $parameters = [])
     {
-        // Esempio: HomeController@index
-        list($controller, $method) = explode('@', $action);
+        // e.g. HomeController@index
+        $url = self::to(RouterHelper::get_action_uri($action));
 
-        $url = self::to("/{$controller}/{$method}");
-
-        // Aggiungi i parametri query se ce ne sono
+        // Add query parameters if any
         if (!empty($parameters)) {
             $url .= '?' . http_build_query($parameters);
         }

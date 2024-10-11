@@ -71,6 +71,7 @@ class AuthController extends BaseController
                     'Your account has been created successfully. Please check your email to activate your account.'
                 );
             }
+            
         } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
             return view('auth/register')->with([
