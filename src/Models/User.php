@@ -285,7 +285,7 @@ class User {
     /**
      * Find an unverified user by activation code
      * @param string $activation_code
-     * @return array
+     * @return mixed
      */
     public function find_unverified_user($email, $activation_code)
     {

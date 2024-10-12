@@ -57,7 +57,7 @@ class AuthController extends BaseController
             [$inputs, $errors] = $this->filter->filter(request()->post(), $fields, $messages);
 
             if ($errors) {
-                return view('auth/register')->with([
+                return view('auth/register')->with_input([
                     'errors' => $errors,
                     'inputs'=> $inputs
                 ]);
@@ -79,7 +79,7 @@ class AuthController extends BaseController
             
         } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
-            return view('auth/register')->with([
+            return view('auth/register')->with_input([
                 'errors' => $errors,
                 'inputs'=> $inputs
             ]);
@@ -119,7 +119,7 @@ class AuthController extends BaseController
             [$inputs, $errors] = $this->filter->filter(request()->post(), $fields, $messages);
 
             if ($errors) {
-                return view('auth/login')->with([
+                return view('auth/login')->with_input([
                     'errors' => $errors,
                     'inputs'=> $inputs
                 ]);
@@ -129,7 +129,7 @@ class AuthController extends BaseController
 
             if (!$user) {
                 $errors['login'] = 'Invalid username or password';
-                return view('auth/login')->with([
+                return view('auth/login')->with_input([
                     'errors' => $errors,
                     'inputs'=> $inputs
                 ]);
@@ -141,7 +141,7 @@ class AuthController extends BaseController
         } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
             
-            return view('auth/login')->with([
+            return view('auth/login')->with_input([
                 'errors' => $errors,
                 'inputs'=> $inputs
             ]);
@@ -259,7 +259,7 @@ class AuthController extends BaseController
             ]);
         } elseif (request()->is_method('get')) {                
             [$errors, $inputs] = session_flash('errors', 'inputs');
-            return view('auth/update_password')->with([
+            return redirect()->back()->with_input([
                 'errors' => $errors,
                 'inputs'=> $inputs
             ]);
@@ -302,7 +302,7 @@ class AuthController extends BaseController
                     'Your password has been reset successfully.'
                 );
             }
-            return view('auth/reset_password')->with([
+            return view('auth/reset_password')->with_input([
                 'errors' => $errors,
                 'inputs'=> $inputs
             ]);
@@ -321,7 +321,7 @@ class AuthController extends BaseController
             [$inputs, $errors] = $this->filter->filter(request()->get(), $fields, $messages);
 
             if (!$errors) {
-                return view('auth/reset_password')->with([
+                return view('auth/reset_password')->with_input([
                     'errors' => $errors,
                     'inputs'=> $inputs
                 ]);
@@ -362,7 +362,7 @@ class AuthController extends BaseController
             [$inputs, $errors] = $this->filter->filter(request()->post(), $fields, $messages);
 
             if ($errors) {
-                return view('auth/forgot_password')->with([
+                return view('auth/forgot_password')->with_input([
                     'errors' => $errors,
                     'inputs'=> $inputs
                 ]);
@@ -380,7 +380,7 @@ class AuthController extends BaseController
  
         } elseif (request()->is_method('get')) {
             [$errors, $inputs] = session_flash('errors', 'inputs');
-            return view('auth/forgot_password')->with([
+            return view('auth/forgot_password')->with_input([
                 'errors' => $errors,
                 'inputs'=> $inputs
             ]);
