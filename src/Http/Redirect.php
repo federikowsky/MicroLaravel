@@ -3,7 +3,6 @@
 namespace App\HTTP;
 
 use App\Core\Flash;
-use App\Core\ServiceContainer;
 use App\HTTP\BaseResponse;
 use App\HTTP\Support\UrlGenerator;
 
@@ -19,7 +18,7 @@ class Redirect extends BaseResponse
     public function make(string $path, int $status = 302 , array $headers = []): Redirect
     {
         if (!$path) {
-            throw new \Exception('Path must be set.');
+            throw new \InvalidArgumentException('Path must be set.');
         }
 
         $this->url = $path;
@@ -61,7 +60,7 @@ class Redirect extends BaseResponse
     public function to(string $path, int $status = 302, array $headers = [], bool $secure = false): Redirect
     {
         if (!$path) {
-            throw new \Exception('Path must be set.');
+            throw new \InvalidArgumentException('Path must be set.');
         }
 
         $this->url = UrlGenerator::to($path, $secure);
@@ -89,7 +88,7 @@ class Redirect extends BaseResponse
     public function route(string $route, array $parameters = [], int $status = 302, array $headers = []): Redirect
     {
         if (!$route) {
-            throw new \Exception('Route must be set.');
+            throw new \InvalidArgumentException('Route must be set.');
         }
 
         $this->url = UrlGenerator::route($route, $parameters);
@@ -118,7 +117,7 @@ class Redirect extends BaseResponse
     public function action(string $action, array $parameters = [], int $status = 302, array $headers = []): Redirect
     {
         if (!$action) {
-            throw new \Exception('Action must be set.');
+            throw new \InvalidArgumentException('Action must be set.');
         }
 
         $this->url = UrlGenerator::action($action, $parameters);
@@ -192,7 +191,7 @@ class Redirect extends BaseResponse
     public function with_message(string $message, string $type = Flash::FLASH_SUCCESS): Redirect
     {
         if (!$message) {
-            throw new \Exception('Message must be set.');
+            throw new \InvalidArgumentException('Message must be set.');
         }
 
         flash('flash_' . uniqid(), $message, $type);
@@ -202,21 +201,28 @@ class Redirect extends BaseResponse
     /**
      * Redirect the user with specific data in the session (input data).
      * 
-     * @param array $input
+     * @param $key
+     * @param $value
      * @return $this
      * 
-     * @use redirect()->to('/home')->with_input(['username' => 'John']);
+     * @use redirect()->to('/home')->with_input('username', 'John');
      * @use redirect()->route('home')->with_input(['username' => 'John']);
      * @use redirect()->action('HomeController@index')->with_input(['username' => 'John']);
      * 
      */
-    public function with_input(array $input): Redirect
+    public function with_input($key, $value = null): Redirect
     {
-        if (!$input) {
-            throw new \Exception('Input data must be set.');
+        if (!$key || array_is_list($key) || (is_string($key) && is_null($value))) {
+            throw new \InvalidArgumentException('key must be a string or an associative array');
         }
 
-        session()->set('inputs', $input);
+        if (is_array($key)) {
+            foreach($key as $k => $v) {
+                session()->set($k, $v);
+            }
+        } else {
+            session()->set($key, $value);
+        }
 
         return $this;
     }

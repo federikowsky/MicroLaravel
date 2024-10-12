@@ -1,15 +1,17 @@
 <?php
 
-namespace App\Exceptions\Auth;
+namespace App\Exceptions\Security;
 
-use App\Exceptions\BaseException;
 use Exception;
+use App\Exceptions\BaseException;
 
-class UnauthorizedException extends BaseException
+
+class ExpiredTokenException extends BaseException
 {
-    protected $message = 'Access denied due to invalid credentials.';
-    protected $code = 403;
-    protected $view = 'errors/403';
+    protected $message = 'Token has expired.';
+    protected $code = 401;
+    protected $view = 'errors/401';
+
 
     public function __construct($message = null, $code = null, Exception $previous = null)
     {
@@ -21,4 +23,5 @@ class UnauthorizedException extends BaseException
         }
         parent::__construct($this->message,  $this->view, $this->code, $previous);
     }
+
 }

@@ -3,7 +3,7 @@
 
 namespace App\Middlewares;
 
-use App\HTTP\Request;
+use App\Exceptions\Auth\CsrfTokenMismatchException;
 
 class CSRFMiddleware
 {
@@ -24,7 +24,7 @@ class CSRFMiddleware
         if (in_array(request()->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             if (request()->missing('csrf_token') || !$this->verify_csrf_token(request()->post('csrf_token'))) {
                 // Gestisci il fallimento del token CSRF
-                throw new \Exception('Invalid CSRF token');
+                throw new CsrfTokenMismatchException('Invalid CSRF token');
             }
         }
 

@@ -78,7 +78,10 @@ if ($request_method === 'POST') {
             </div>
             <button type="submit">Donate</button>
         </form>
-        <a href="/auth/logout">clicca per logout qui</a>
+        <form action="/auth/logout" method="post">
+            <?= csrf_field() ?>
+            <button type="submit">Logout</button>
+        </form>
         <br>
         <a href="/auth/register">registrati qui</a>
         <br>

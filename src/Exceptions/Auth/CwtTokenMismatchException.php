@@ -2,14 +2,15 @@
 
 namespace App\Exceptions\Auth;
 
-use App\Exceptions\BaseException;
 use Exception;
+use App\Exceptions\BaseException;
 
-class UnauthorizedException extends BaseException
+class CwtTokenMismatchException extends BaseException
 {
-    protected $message = 'Access denied due to invalid credentials.';
+    protected $message = 'CWT token mismatch.';
     protected $code = 403;
     protected $view = 'errors/403';
+
 
     public function __construct($message = null, $code = null, Exception $previous = null)
     {

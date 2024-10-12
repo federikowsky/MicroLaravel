@@ -2,7 +2,7 @@
 
 namespace App\Middlewares;
 
-use App\Services\EncryptionService;
+use App\Services\Security\EncryptionService;
 
 class EncryptCookiesMiddleware
 {

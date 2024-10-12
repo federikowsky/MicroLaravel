@@ -13,7 +13,7 @@ class Flash
 
     public function __construct()
     {
-        if (session()->has(self::FLASH)) {
+        if (!session()->has(self::FLASH)) {
             session()->set(self::FLASH, []);
         }
     }

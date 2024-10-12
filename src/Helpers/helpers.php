@@ -91,9 +91,7 @@ if (!function_exists('flash')) {
     function flash(string $name = '', string $message = '', string $type = ''): Flash
     {
         $flash_ob = (object) ServiceContainer::get_container()->getLazy(Flash::class);
-        if ($name || $message || $type) {
-            return $flash_ob->flash($name, $message, $type);
-        }
+        $flash_ob->flash($name, $message, $type);
         return $flash_ob;
     }
 }
@@ -123,7 +121,7 @@ if (!function_exists('session')) {
  */
 function csrf_field(): string
 {
-    if (!session()->token()) {
+    if (!session()->token() || session()->token_time() < time()) {
         session()->regenerate_token();
     }
 
@@ -131,6 +129,10 @@ function csrf_field(): string
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
 }
 
+function ewt_field($tk): string
+{
+    return '<input type="hidden" name="ewt" value="' . htmlspecialchars($tk) . '">';
+}
 
 /**
  * Return the error class if error is found in the array $errors

@@ -31,6 +31,7 @@
         <section>
             <button type="submit">Login</button>
             <a href="/auth/register">Register</a>
+            <a href="/auth/password/forgot">forgot</a>
         </section>
 
     </form>

@@ -30,7 +30,7 @@ class View extends BaseResponse
 
     public function with($key, $value = null): View
     {
-        if (!$key || array_is_list($key)) {
+        if (!$key || array_is_list($key) || (is_string($key) && is_null($value))) {
             throw new \InvalidArgumentException('key must be a string or an associative array');
         }
 

@@ -2,15 +2,16 @@
 
 namespace App\Helpers;
 
+use App\Facades\CWT;
 use App\Models\User;
 
 class Validator
 {
-    protected $db;
+    protected $userModel;
 
-    public function __construct(\PDO $db)
+    public function __construct(User $userModel)
     {
-        $this->db = $db;
+        $this->userModel = $userModel;
     }
 
     const DEFAULT_VALIDATION_ERRORS = [
@@ -23,6 +24,7 @@ class Validator
         'alphanumeric' => 'The %s should have only letters and numbers',
         'secure' => 'The %s must have between 8 and 64 characters and contain at least one number, one upper case letter, one lower case letter and one special character',
         'unique' => 'The %s already exists',
+        'setted' => 'The %s is not set',
         'agree' => 'You must agree to the terms and conditions',
     ];
 
@@ -196,11 +198,22 @@ class Validator
     
         $sql = "SELECT $column FROM $table WHERE $column = :value LIMIT 1";
     
-        $userModel = new User($this->db);
-    
-        $stmt = $userModel->execute_query($sql, [':value' => $data[$field]]);
+        $stmt = $this->userModel->execute_query($sql, [':value' => $data[$field]]);
     
         return $stmt->fetchColumn() === false;
+    }
+
+    public function is_setted(array $data, string $field, string $table, string $column): bool
+    {
+        if (!isset($data[$field])) {
+            return true;
+        }
+    
+        $sql = "SELECT $column FROM $table WHERE $column = :value LIMIT 1";
+    
+        $stmt = $this->userModel->execute_query($sql, [':value' => $data[$field]]);
+    
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

@@ -21,7 +21,9 @@ interface SessionDriverInterface
     public function increment($key, $amount = 1);
     public function decrement($key, $amount = 1);
     public function token();
-    public function regenerate_token();
+    public function token_time();
+
+    public function regenerate_token($minutes);
     public function save();
     public function migrate($destroy = false);
     public function isStarted();

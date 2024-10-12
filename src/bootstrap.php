@@ -13,7 +13,7 @@ use App\HTTP\ {
     Router
 };
 
-use App\Services\ {
+use App\Services\Security\ {
     EncryptionService
 };
 

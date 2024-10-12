@@ -3,12 +3,12 @@
 namespace App\Facades;
 
 use App\Facades\BaseFacade;
-use App\Services\Security\EncryptionService;
+use App\Services\Security\CustomWebTokenService;
 
-class Encrypt extends BaseFacade
+class CWT extends BaseFacade
 {
     protected static function get_facade_accessor()
     {
-        return EncryptionService::class;
+        return CustomWebTokenService::class;
     }
 }

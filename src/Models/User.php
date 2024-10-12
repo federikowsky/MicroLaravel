@@ -13,7 +13,12 @@ class User {
         $this->db = $db;
     }
 
-    // Metodo generico per eseguire una query con parametri di binding
+    /**
+     * Run a costum query 
+     * @param string $sql
+     * @param array $params
+     * @return bool|\PDOStatement
+     */
     public function execute_query(string $sql, array $params = [])
     {
         $stmt = $this->db->prepare($sql);
@@ -26,7 +31,11 @@ class User {
         return $stmt;
     }
 
-    // Metodo per verificare se un utente è admin
+    /**
+     * Check if a user is an admin
+     * @param mixed $user_id
+     * @return bool
+     */
     public function is_admin($user_id): bool
     {
         $query = 'SELECT is_admin
@@ -42,7 +51,12 @@ class User {
         return $user['is_admin'] === '1';
     }
 
-    // Metodo per verificare se un utente gia esiste
+    /**
+     * Check if a user exists
+     * @param mixed $email
+     * @param mixed $username
+     * @return bool
+     */
     public function exists($email, $username): bool
     {
         $query = 'SELECT COUNT(*) as count
@@ -59,7 +73,16 @@ class User {
         return (int) $result['count'] > 0;
     }
 
-    // Metodo per creare un nuovo utente
+    /**
+     * Create a new user 
+     * @param string $email
+     * @param string $username
+     * @param string $password
+     * @param string $activation_code
+     * @param int $expiry
+     * @param bool $is_admin
+     * @return bool
+     */
     public function create(string $email, string $username, string $password, string $activation_code, int $expiry = 60 * 60 * 24 * 1, bool $is_admin = false): bool
     {
         // sanity check
@@ -83,7 +106,11 @@ class User {
         return $stmt->execute();
     }
 
-    // Metodo per attivare un utente
+    /**
+     * Activate a user
+     * @param int $user_id
+     * @return bool
+     */
     public function activate(int $user_id): bool
     {
         $query = 'UPDATE users
@@ -96,22 +123,47 @@ class User {
         return $stmt->execute();
     }
 
-    // Metodo per aggiornare i dati di un utente
-    public function update($id, array $data) {
-        $query = 'UPDATE users
-            SET username = :username, email = :email, is_admin = :is_admin
-            WHERE id = :id';
-        
+    /**
+     * Update a user field, only the fields provided in the $data array will be updated
+     * if no valid fields provided for update throw an exception
+     
+     * @param int $user_id
+     * @param string $password
+     * @return bool
+     * @throws \InvalidArgumentException
+     */
+    public function update($id, array $data): bool
+    {
+        $validFields = ['username', 'email', 'password', 'is_admin', 'active'];
+        $data = array_intersect_key($data, array_flip($validFields));
+
+        // if no valid fields provided for update throw an exception
+        if (empty($data)) {
+            throw new \InvalidArgumentException('No valid fields provided for update.');
+        }
+
+        // Create the SET part of the SQL query
+        $setParts = implode(', ', array_map(fn($field) => "$field = :$field", array_keys($data)));
+
+        // Build the query
+        $query = "UPDATE users SET $setParts WHERE id = :id";
+
         $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':username', $data['username']);
-        $stmt->bindValue(':email', $data['email']);
-        $stmt->bindValue(':is_admin', $data['is_admin']);
-        $stmt->bindValue(':id', $id);
+
+        // Binding
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
 
         return $stmt->execute();
     }
 
-    // Metodo per eliminare un utente
+    /**
+     * Delete a user
+     * @param int $id
+     * @return bool
+     */
     public function delete($id) {
         $query = 'DELETE FROM users
             WHERE id =:id';
@@ -122,7 +174,11 @@ class User {
         return $stmt->execute();
     }
 
-    // Inserisce un token di autenticazione (remember me)
+    /**
+     * Insert a new user token for the remember me feature
+     * @param string $email
+     * @return array
+     */
     public function insert_user_token(int $user_id, string $selector, string $validator, string $expiry): bool
     {
         $query = 'INSERT INTO user_tokens(user_id, selector, hashed_validator, expiry)
@@ -137,7 +193,11 @@ class User {
         return $stmt->execute();
     }
 
-    // Elimina un token di autenticazione associato a un utente
+    /**
+     * Delete all user tokens
+     * @param int $user_id
+     * @return bool
+     */
     public function delete_user_token(int $user_id): bool
     {
         $query = 'DELETE FROM user_tokens WHERE user_id = :user_id';
@@ -148,7 +208,11 @@ class User {
         return $stmt->execute();
     }
 
-    // Metodo per trovare un utente tramite l'email
+    /**
+     * Find a user by email
+     * @param string $email
+     * @return array
+     */
     public function find_by_email($email)
     {
         $query = 'SELECT id, username, email, password, active, is_admin
@@ -162,7 +226,11 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Metodo per trovare un utente tramite l'username
+    /**
+     * Find a user by username
+     * @param string $username
+     * @return array
+     */
     public function find_by_username($username)
     {
         $query = 'SELECT id, username, email, password, active, is_admin
@@ -176,7 +244,11 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Metodo per trovare un utente tramite l'id
+    /**
+     * Find a user by id
+     * @param int $id
+     * @return array
+     */
     public function find_by_id($id)
     {
         $query = 'SELECT id, username, email, password, active, is_admin
@@ -190,7 +262,12 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function finde_by_activation_code($activation_code)
+    /**
+     * Find a user by activation code 
+     * @param string $activation_code
+     * @return array
+     */
+    public function find_by_activation_code($activation_code)
     {
         $hashed_activation_code = hash_hmac('sha256', $activation_code, SECRET_KEY);
 
@@ -205,38 +282,45 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Metodo per trovare un utente non verificato
-    public function find_unverified_user($activation_code)
+    /**
+     * Find an unverified user by activation code
+     * @param string $activation_code
+     * @return array
+     */
+    public function find_unverified_user($email, $activation_code)
     {
         $hashed_activation_code = hash_hmac('sha256', $activation_code, SECRET_KEY);
         
         // find the user with the activation code
         $query = 'SELECT id, activation_code, activation_expiry < now() as expired
                 FROM users
-                WHERE active = 0 AND activation_code=:activation_code';
+                WHERE active = 0 AND email=:email AND activation_code=:activation_code';
 
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':activation_code', $hashed_activation_code);
+        $stmt->bindValue(':email', $email);
         $stmt->execute();
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user) {
-            // already expired, delete the in active user with expired activation code
-            if ((int) $user['expired'] === 1) {
-                $this->delete($user['id']);
-                return null;
-            }
-            // verify the password
-            if (hash_equals($user['activation_code'], $activation_code)) {
+            // if the activation code is not expired return the user
+            if ((int) $user['expired'] === 0) {
                 return $user;
             }
+            
+            // already expired, delete the in active user with expired activation code
+            $this->delete($user['id']);
         }
 
         return null;
     }
 
-    // Trova un token di autenticazione in base al selector
+    /**
+     * Find a user token by selector
+     * @param string $selector
+     * @return array
+     */
     public function find_user_token_by_selector(string $selector)
     {
         $query = 'SELECT id, selector, hashed_validator, user_id, expiry
@@ -252,7 +336,11 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Trova un utente associato a un token
+    /**
+     * Find a user by token
+     * @param string $selector
+     * @return array
+     */
     public function find_user_by_token(string $selector)
     {
         $query = 'SELECT users.id, username

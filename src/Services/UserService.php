@@ -16,9 +16,9 @@ class UserService
         $this->authService = $authService;
     }
 
-    public function current_user()
+    public function current_user($key = null)
     {
-        return $this->authService->current_user();
+        return $this->authService->current_user($key);
     }
 
     public function getUserById(int $id): ?array

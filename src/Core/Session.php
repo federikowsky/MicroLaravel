@@ -74,7 +74,9 @@ class Session
 
     public function regenerate($destroy = false)
     {
+        $this->regenerate_token();
         return $this->driver->regenerate($destroy);
+
     }
 
     public function previousUrl()
@@ -97,9 +99,14 @@ class Session
         return $this->driver->token();
     }
 
-    public function regenerate_token()
+    public function token_time()
     {
-        $this->driver->regenerate_token();
+        return $this->driver->token_time();
+    }
+
+    public function regenerate_token($minutes = 60)
+    {
+        $this->driver->regenerate_token($minutes);
     }
 
     public function save()

@@ -126,9 +126,15 @@ class FileSessionDriver implements SessionDriverInterface
         return $this->get('_csrf_token');
     }
 
-    public function regenerate_token()
+    public function token_time()
+    {
+        return $this->get('_csrf_token_time');
+    }
+
+    public function regenerate_token($minutes)
     {
         $this->set('_csrf_token', bin2hex(random_bytes(32)));
+        $this->set('_csrf_token_time', time() + ($minutes * 60));
     }
 
     public function save()

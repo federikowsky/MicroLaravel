@@ -100,7 +100,12 @@ class DatabaseSessionDriver implements SessionDriverInterface
         // get the session token
     }
 
-    public function regenerate_token()
+    public function token_time()
+    {
+        // get the session token time
+    }
+
+    public function regenerate_token($minutes)
     {
         // regenerate the session token
     }

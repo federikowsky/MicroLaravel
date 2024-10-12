@@ -3,7 +3,6 @@
 
 namespace App\Middlewares;
 
-use App\HTTP\Request;
 use App\Services\AuthService;
 
 class AuthMiddleware

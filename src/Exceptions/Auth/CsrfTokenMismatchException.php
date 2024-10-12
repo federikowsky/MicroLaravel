@@ -8,13 +8,18 @@ use App\Exceptions\BaseException;
 class CsrfTokenMismatchException extends BaseException
 {
     protected $message = 'CSRF token mismatch.';
-    protected $view = '';
+    protected $code = 403;
+    protected $view = 'errors/403';
 
-    public function __construct($message = null, $code = 0, Exception $previous = null)
+
+    public function __construct($message = null, $code = null, Exception $previous = null)
     {
-        if ($message) {
+        if ($message !== null) {
             $this->message = $message;
         }
-        parent::__construct($this->message, $this->view, $this->code, $previous);
+        if ($code !== null) {
+            $this->code = $code;
+        }
+        parent::__construct($this->message,  $this->view, $this->code, $previous);
     }
 }

@@ -7,7 +7,7 @@ use App\HTTP\Response;
 
 use App\Facades\BaseFacade;
 
-use App\Services\EncryptionService;
+use App\Services\Security\EncryptionService;
 
 class ResponseTest extends TestCase
 {

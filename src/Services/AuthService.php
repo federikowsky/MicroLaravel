@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\HTTP\Support\UrlGenerator;
 use App\Models\User;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -15,10 +16,10 @@ class AuthService
         $this->userModel = $userModel;
     }
 
-    public function current_user()
+    public function current_user($key = null)
     {
         if ($this->is_user_logged_in()) {
-            return session()->get('username');
+            return $key ? session()->get($key) : session()->get('username');
         }
         return null;
     }
@@ -61,26 +62,26 @@ class AuthService
         return false;
     }
 
+    public function verify_password(int $email, string $old_password): bool
+    {
+        $user = $this->userModel->find_by_email($email);
+
+        if (!$user) {
+            throw new \Exception('User not found.');
+        }
+
+        return password_verify($old_password, $user['password']);
+    }
+
     /*************************************** Registration ***************************************/
 
-    public function generate_activation_code(): string
+    public function generate_code(): string
     {
         return bin2hex(random_bytes(32));
     }
 
-    public function send_activation_email(string $email, string $activation_code): void
+    private function send_email(string $email, string $subject, string $body): void
     {
-        // create the activation link
-        $activation_link = APP_URL . "/auth/activate?activation_code=$activation_code";
-        
-        // set email subject & body
-        $subject = 'Please activate your account';
-        $body = <<<MESSAGE
-            Hi,
-            Please click the following link to activate your account:
-            $activation_link
-        MESSAGE;
-
         $mail = new PHPMailer(true);
 
         // Configura il server SMTP
@@ -106,6 +107,23 @@ class AuthService
             echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
         }
     }
+
+    public function send_activation_email(string $email, string $ewt): void
+    {
+        // create the activation link
+        $activation_link = UrlGenerator::route('auth.activate', ['ewt' => $ewt]);
+        
+        // set email subject & body
+        $subject = 'Please activate your account';
+        $body = <<<MESSAGE
+            Hi,
+            Please click the following link to activate your account:
+            $activation_link
+        MESSAGE;
+
+        // send the email
+        $this->send_email($email, $subject, $body);
+    }
     
     public function register(string $email, string $username, string $password, string $activation_code): bool
     {
@@ -121,6 +139,7 @@ class AuthService
             // set username & id in the session
             session()->set('username', $user['username']);
             session()->set('user_id', $user['id']);
+            session()->set('email', $user['email']);
             return true;
         }
         return false;
@@ -134,6 +153,7 @@ class AuthService
             if ($rememberMe) {
                 $this->remember_me($user['id']);
             }
+
             return $user;
         }
         return null;
@@ -148,13 +168,13 @@ class AuthService
             $this->userModel->delete_user_token(session()->get('user_id'));
             session()->remove('username');
             session()->remove('user_id');
+            /**
+             * if set remove the remember_me cookie from the request object
+             * so that it will not be accessibile in the current request
+             * and set the cookie to be expired in the browser side
+             */
             if (request()->has_cookie('remember_me')) {
-                /**
-                 * remove the remember_me cookie from the request object
-                 * so that it will not be accessibile in the current request
-                 */
                 request()->remove_cookie('remember_me');
-                // set the cookie to be expired in the browser side
                 response()->without_cookie('remember_me');
             }
             session()->destroy();
@@ -216,19 +236,49 @@ class AuthService
 
     /*************************************** Activation ***************************************/
 
-    public function is_user_verified(string $activation_code): bool
+    public function is_user_verified(string $email): bool
     {
-        $user =  $this->userModel->finde_by_activation_code($activation_code);
+        $user =  $this->userModel->find_by_email($email);
         return $user && $this->is_user_active($user);
     }
 
-    public function activate(string $activation_code): bool
+    public function activate(string $email, string $activation_code): bool
     {
-
-        $user = $this->userModel->find_unverified_user($activation_code);
+        $user = $this->userModel->find_unverified_user($email, $activation_code);
         if ($user) {
             return $this->userModel->activate($user['id']);
         }
         return false;
+    }
+
+    /*************************************** Update Password ***************************************/
+
+    public function update_password(string $email, string $new_password): bool
+    {
+        $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+
+        $user_id = $this->userModel->find_by_email($email)['id'];
+
+        return $this->userModel->update($user_id, ['password' => $hashed_password]);
+    }
+
+
+    /*************************************** Forgot Password ***************************************/
+
+    public function send_forgot_email(string $email, string $ewt): void
+    {
+        // create the reset link
+        $reset_link = UrlGenerator::route('auth.reset_password', ['ewt' => $ewt]);
+        
+        // set email subject & body
+        $subject = 'Reset your password';
+        $body = <<<MESSAGE
+            Hi,
+            Please click the following link to reset your password:
+            $reset_link
+        MESSAGE;
+
+        // send the email
+        $this->send_email($email, $subject, $body);
     }
 }

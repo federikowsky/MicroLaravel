@@ -1,15 +1,16 @@
 <?php
 
-namespace App\Exceptions\Auth;
+namespace App\Exceptions\Security;
 
-use App\Exceptions\BaseException;
 use Exception;
+use App\Exceptions\BaseException;
 
-class UnauthorizedException extends BaseException
+class EncryptionException extends BaseException
 {
-    protected $message = 'Access denied due to invalid credentials.';
-    protected $code = 403;
-    protected $view = 'errors/403';
+    protected $message = 'Encryption error.';
+    protected $code = 500;
+    protected $view = 'errors/500';
+
 
     public function __construct($message = null, $code = null, Exception $previous = null)
     {
